@@ -1,0 +1,409 @@
+.root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  padding: 2rem 3rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+}
+
+.headerInner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 1.25rem;
+}
+
+.logoArea {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.logoMark {
+  color: var(--accent);
+  font-size: 0.75rem;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.logoText {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.metaLabel {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.userInfo {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  font-family: 'DM Mono', monospace;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.logoutBtn {
+  background: none;
+  border: 1px solid var(--border-dark);
+  color: var(--ink-muted);
+  padding: 0.35rem 0.7rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.3s ease;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.logoutBtn:hover {
+  background: rgba(200, 68, 47, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.headerRule {
+  height: 1px;
+  background: linear-gradient(to right, var(--ink) 0%, var(--border) 60%, transparent 100%);
+}
+
+/* ── Main Layout ── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 3rem 0 0;
+  align-items: start;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  padding: 2.5rem 2rem 2.5rem 3rem;
+  border-right: 1px solid var(--border);
+  min-height: calc(100vh - 120px);
+}
+
+.sidebarSticky {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.sidebarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionLabel {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── Filters ── */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.filterBtn:hover {
+  background: var(--border);
+}
+
+.filterBtnActive {
+  background: var(--ink) !important;
+}
+
+.filterBtnActive .filterLabel,
+.filterBtnActive .filterCount {
+  color: var(--bg) !important;
+}
+
+.filterLabel {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  font-family: 'DM Mono', monospace;
+  transition: color 0.15s;
+}
+
+.filterCount {
+  font-size: 0.65rem;
+  color: var(--ink-faint);
+  font-family: 'DM Mono', monospace;
+  background: var(--border);
+  padding: 2px 7px;
+  border-radius: 20px;
+  transition: all 0.15s;
+}
+
+.filterBtnActive .filterCount {
+  background: rgba(255,255,255,0.15);
+}
+
+/* Clear btn */
+.clearBtn {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent-soft);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.clearBtn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* ── Content ── */
+.content {
+  padding: 2.5rem 0 2.5rem 2.5rem;
+}
+
+/* ── Error banner ── */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+}
+
+.errorBanner button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--accent);
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+/* ── Loading ── */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 6rem 0;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.loadingDots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.loadingDots span {
+  width: 6px;
+  height: 6px;
+  background: var(--ink-faint);
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.loadingDots span:nth-child(2) { animation-delay: 0.2s; }
+.loadingDots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Footer ── */
+.footer {
+  padding: 0 3rem 2rem;
+}
+
+.footerRule {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 1.25rem;
+}
+
+.footerInner {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* ── Auto Tag Settings ── */
+.autoTagToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.autoTagCheckbox {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-dark);
+  border-radius: 2px;
+  background: var(--bg-card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.autoTagCheckbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.autoTagCheckbox:checked::after {
+  content: '';
+  width: 6.5px;
+  height: 4.5px;
+  border-left: 1.5px solid white;
+  border-bottom: 1.5px solid white;
+  transform: rotate(-45deg);
+  margin-top: -2px;
+}
+
+.autoTagLabel {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  line-height: 1.3;
+}
+
+/* ── Toast Notification ── */
+.toastContainer {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0.75rem 1.25rem;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(26, 23, 20, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 1000;
+  animation: slideIn 0.25s ease-out;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(1rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.toastUndoBtn {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace;
+  transition: all 0.15s;
+}
+
+.toastUndoBtn:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header, .footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .main {
+    grid-template-columns: 1fr;
+    padding: 0 1.25rem;
+  }
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    min-height: auto;
+    padding: 1.5rem 0;
+  }
+  .sidebarSticky { position: static; }
+  .filters { flex-direction: row; flex-wrap: wrap; gap: 0.5rem; }
+  .filterBtn { width: auto; }
+  .content { padding: 1.5rem 0; }
+}

@@ -1,0 +1,246 @@
+import Dexie, { Table } from 'dexie';
+import { Task, Tag } from './types';
+
+export interface DBItem {
+  id: string;
+  type: string; // 'task' | 'tag' | 'movie' | 'note', etc.
+  status: string; // 'active' | 'completed' | etc.
+  isDeleted: number; // 0 for false, 1 for true (IndexedDB indexes numbers better)
+  createdAt: string;
+  updatedAt: string;
+  payload: any; // Freeform object for specific item data
+}
+
+export class MyTuDoDatabase extends Dexie {
+  items!: Table<DBItem, string>;
+
+  constructor() {
+    super('MyTuDoDB');
+    this.version(1).stores({
+      // Indexes for generic querying
+      items: 'id, type, status, isDeleted, updatedAt, [type+isDeleted]'
+    });
+  }
+}
+
+export const db = new MyTuDoDatabase();
+
+// Hooks to notify useSync.ts about local changes
+db.items.hook('creating', function () {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('dexie-local-change'));
+  }
+});
+db.items.hook('updating', function () {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('dexie-local-change'));
+  }
+});
+db.items.hook('deleting', function () {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('dexie-local-change'));
+  }
+});
+
+// --- Adapters for UI (Generic Item <-> Specific Type) ---
+
+export const itemToTask = (item: DBItem): Task => {
+  return {
+    id: item.id,
+    title: item.payload.title || '',
+    description: item.payload.description || null,
+    completed: item.status === 'completed',
+    dueDate: item.payload.dueDate || null,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    tags: item.payload.tags || [],
+  };
+};
+
+export const itemToTag = (item: DBItem): Tag => {
+  return {
+    id: item.id,
+    name: item.payload.name || '',
+    description: item.payload.description || null,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+};
+
+// --- CRUD Operations ---
+
+// Generic Add
+export const addItem = async (type: string, status: string, payload: any) => {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  await db.items.add({
+    id,
+    type,
+    status,
+    isDeleted: 0,
+    createdAt: now,
+    updatedAt: now,
+    payload,
+  });
+  return id;
+};
+
+// Generic Soft Delete
+export const softDeleteItem = async (id: string) => {
+  const now = new Date().toISOString();
+  await db.items.update(id, {
+    isDeleted: 1,
+    updatedAt: now,
+  });
+};
+
+// --- Task Specific CRUD ---
+
+export const getTasks = async (): Promise<Task[]> => {
+  const items = await db.items.where({ type: 'task', isDeleted: 0 }).toArray();
+  // Sort by createdAt descending (newest first) usually, but we can just map and return
+  return items.map(itemToTask).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+export const addTask = async (title: string, description?: string, dueDate?: string) => {
+  await addItem('task', 'active', {
+    title,
+    description: description || null,
+    dueDate: dueDate || null,
+    tags: []
+  });
+};
+
+export const editTask = async (id: string, title: string, description: string, dueDate?: string) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  const now = new Date().toISOString();
+  await db.items.update(id, {
+    updatedAt: now,
+    payload: {
+      ...item.payload,
+      title,
+      description: description || null,
+      dueDate: dueDate || null,
+    }
+  });
+};
+
+export const toggleTask = async (id: string) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  const newStatus = item.status === 'completed' ? 'active' : 'completed';
+  const now = new Date().toISOString();
+  await db.items.update(id, {
+    status: newStatus,
+    updatedAt: now,
+  });
+};
+
+export const deleteTask = async (id: string) => {
+  await softDeleteItem(id);
+};
+
+export const toggleTaskTag = async (taskId: string, tagId: string) => {
+  const taskItem = await db.items.get(taskId);
+  const tagItem = await db.items.get(tagId);
+  
+  if (!taskItem || !tagItem) return;
+
+  const currentTags: Tag[] = taskItem.payload.tags || [];
+  const hasTag = currentTags.some(t => t.id === tagId);
+  
+  let newTags;
+  if (hasTag) {
+    newTags = currentTags.filter(t => t.id !== tagId);
+  } else {
+    newTags = [...currentTags, itemToTag(tagItem)];
+  }
+
+  await db.items.update(taskId, {
+    updatedAt: new Date().toISOString(),
+    payload: {
+      ...taskItem.payload,
+      tags: newTags
+    }
+  });
+};
+
+export const autoTagTask = async (taskId: string): Promise<boolean> => {
+  // Mock IA logic
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const tags = await getTags();
+  if (tags.length === 0) return false;
+  
+  const randomTag = tags[Math.floor(Math.random() * tags.length)];
+  const taskItem = await db.items.get(taskId);
+  if (!taskItem) return false;
+
+  const currentTags: Tag[] = taskItem.payload.tags || [];
+  if (currentTags.some(t => t.id === randomTag.id)) return true;
+
+  await db.items.update(taskId, {
+    updatedAt: new Date().toISOString(),
+    payload: {
+      ...taskItem.payload,
+      tags: [...currentTags, randomTag]
+    }
+  });
+  return true;
+};
+
+// --- Tag Specific CRUD ---
+
+export const getTags = async (): Promise<Tag[]> => {
+  const items = await db.items.where({ type: 'tag', isDeleted: 0 }).toArray();
+  return items.map(itemToTag).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+export const addTag = async (name: string, description: string) => {
+  await addItem('tag', 'active', {
+    name,
+    description: description || null
+  });
+};
+
+export const editTag = async (id: string, name: string, description: string) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  const now = new Date().toISOString();
+  await db.items.update(id, {
+    updatedAt: now,
+    payload: {
+      ...item.payload,
+      name,
+      description: description || null,
+    }
+  });
+
+  // Since it's NoSQL, we must also update this tag in all tasks that embed it
+  const tasks = await db.items.where({ type: 'task', isDeleted: 0 }).toArray();
+  for (const t of tasks) {
+    const currentTags: Tag[] = t.payload.tags || [];
+    if (currentTags.some(tag => tag.id === id)) {
+      const updatedTags = currentTags.map(tag => tag.id === id ? { ...tag, name, description, updatedAt: now } : tag);
+      await db.items.update(t.id, {
+        payload: { ...t.payload, tags: updatedTags }
+      });
+    }
+  }
+};
+
+export const deleteTag = async (id: string) => {
+  await softDeleteItem(id);
+
+  // Remove tag from all tasks that embed it
+  const tasks = await db.items.where({ type: 'task', isDeleted: 0 }).toArray();
+  for (const t of tasks) {
+    const currentTags: Tag[] = t.payload.tags || [];
+    if (currentTags.some(tag => tag.id === id)) {
+      const updatedTags = currentTags.filter(tag => tag.id !== id);
+      await db.items.update(t.id, {
+        payload: { ...t.payload, tags: updatedTags }
+      });
+    }
+  }
+};

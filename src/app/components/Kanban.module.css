@@ -1,0 +1,272 @@
+.boardTemporal {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.boardCategorico {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+  scrollbar-width: thin;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  min-height: 550px;
+  max-height: calc(100vh - 200px);
+  width: 100%;
+  min-width: 280px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(26, 23, 20, 0.03);
+}
+
+.columnDraggingOver {
+  border-color: var(--border-dark);
+  background: rgba(26, 23, 20, 0.02);
+  box-shadow: inset 0 0 8px rgba(26, 23, 20, 0.02);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.columnTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.columnCount {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  background: var(--border);
+  color: var(--ink-muted);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 1rem;
+  padding-right: 4px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+  cursor: grab;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  user-select: none;
+}
+
+.card:hover {
+  border-color: var(--border-dark);
+  box-shadow: var(--shadow);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.cardCompleted {
+  opacity: 0.6;
+}
+
+.cardCompleted .cardTitle {
+  text-decoration: line-through;
+  color: var(--ink-muted);
+}
+
+.cardOverdue {
+  border-color: var(--accent) !important;
+  background: rgba(200, 68, 47, 0.01);
+}
+
+.overdueTag {
+  align-self: flex-start;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: white;
+  background: var(--accent);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+.cardTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.cardDesc {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.cardFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 4px;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+}
+
+.cardDates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardDate {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  background: var(--border);
+  color: var(--ink-muted);
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badgeRemove {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.65rem;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.badgeRemove:hover {
+  color: var(--accent);
+}
+
+.schedulingBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-top: 4px;
+}
+
+.schedulingTitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.schedulingInput {
+  padding: 4px;
+  border: 1px solid var(--border-dark);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-family: 'DM Mono', monospace;
+  width: 100%;
+}
+
+.schedulingActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.schedulingConfirm {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.schedulingCancel {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  background: none;
+  border: 1px solid var(--border-dark);
+  color: var(--ink-muted);
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .boardTemporal {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

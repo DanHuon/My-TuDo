@@ -1,0 +1,134 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputGroup,
+.descGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.inputLine {
+  height: 1px;
+  background: var(--border-dark);
+  transition: background 0.2s;
+}
+
+.inputGroup:focus-within .inputLine,
+.descGroup:focus-within .inputLine {
+  background: var(--ink);
+}
+
+.titleInput {
+  background: none;
+  border: none;
+  outline: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--ink);
+  padding: 0.4rem 0;
+  width: 100%;
+  letter-spacing: -0.01em;
+}
+
+.titleInput::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.titleInput:disabled {
+  opacity: 0.5;
+}
+
+.descInput {
+  background: none;
+  border: none;
+  outline: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  padding: 0.4rem 0;
+  width: 100%;
+  resize: none;
+  line-height: 1.6;
+}
+
+.descInput::placeholder {
+  color: var(--ink-faint);
+}
+
+.descInput:disabled {
+  opacity: 0.5;
+}
+
+.addDescBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  padding: 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.addDescBtn:hover {
+  color: var(--ink-muted);
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  padding: 0.65rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  min-width: 110px;
+  justify-content: center;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(200, 68, 47, 0.25);
+}
+
+.submitBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submitIcon {
+  font-size: 0.45rem;
+  opacity: 0.8;
+}
+
+.submitSpinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
