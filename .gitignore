@@ -24,6 +24,7 @@ dist/
 
 # Internal AI planning / Context (Excluded per user request)
 MEMORIA_IA.md
+REQUISITOS_IMPLEMENTACAO.md
 
 # Debug logs
 npm-debug.log*
