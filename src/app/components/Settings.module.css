@@ -1,0 +1,146 @@
+.container {
+  max-width: 800px;
+  padding: 1rem 0;
+}
+
+.title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--ink);
+  margin-bottom: 2rem;
+}
+
+.section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+  font-family: 'DM Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settingRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.settingLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.settingDesc {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+.themeSelector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.themeBtn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.themeBtn:hover {
+  border-color: var(--ink-muted);
+}
+
+.themeBtnActive {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.syncBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.syncBtn:hover:not(:disabled) {
+  background: #b03a27;
+}
+
+.syncBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dangerZone {
+  border-color: var(--accent-soft);
+}
+
+.dangerTitle {
+  color: var(--accent);
+}
+
+.dangerBtn {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.dangerBtn:hover {
+  background: var(--accent-soft);
+}
+
+@media (max-width: 768px) {
+  .settingRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}

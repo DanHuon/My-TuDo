@@ -123,15 +123,7 @@
   display: flex;
   gap: 0.25rem;
   align-items: center;
-  opacity: 0;
-  transform: translateX(4px);
-  transition: all 0.15s ease;
   margin-top: 2px;
-}
-
-.actionsVisible {
-  opacity: 1;
-  transform: translateX(0);
 }
 
 .actionBtn {

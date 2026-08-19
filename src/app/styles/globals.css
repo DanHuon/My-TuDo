@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
 
 :root {
+  /* Light Theme (Default) */
   --bg: #f5f2ed;
   --bg-card: #faf8f5;
   --ink: #1a1714;
@@ -16,6 +17,31 @@
   --shadow-hover: 0 2px 6px rgba(26, 23, 20, 0.12), 0 12px 32px rgba(26, 23, 20, 0.08);
 }
 
+[data-theme='dark'] {
+  /* Dark Theme */
+  --bg: #1a1714;
+  --bg-card: #25221e;
+  --ink: #f5f2ed;
+  --ink-muted: #b8b2aa;
+  --ink-faint: #6b6560;
+  --accent: #e56b58;
+  --accent-soft: #4a2822;
+  --border: #3d3731;
+  --border-dark: #5c534a;
+  --success: #67a67b;
+  --success-soft: #254030;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -28,12 +54,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background-color: var(--bg);
-  color: var(--ink);
-  font-family: 'DM Mono', monospace;
-  min-height: 100vh;
-}
+
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

@@ -1,0 +1,132 @@
+.sidebar {
+  width: 240px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  transition: transform 0.3s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.logoArea {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0 0.5rem 2rem;
+}
+
+.logoMark {
+  color: var(--accent);
+  font-size: 0.75rem;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.logoText {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.navItem:hover {
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+.navItemActive {
+  background-color: var(--border) !important;
+  color: var(--ink) !important;
+  font-weight: 500;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.bottomNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Mobile Hamburger Menu */
+.hamburgerBtn {
+  display: none;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: var(--ink);
+  color: var(--bg);
+  border: none;
+  box-shadow: var(--shadow-hover);
+  z-index: 110;
+  cursor: pointer;
+  font-size: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 90;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-hover);
+  }
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+  .hamburgerBtn {
+    display: flex;
+  }
+  .overlayOpen {
+    display: block;
+  }
+}

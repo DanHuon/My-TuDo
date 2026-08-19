@@ -17,6 +17,10 @@ import TagForm from './TagForm'
 import TagList from './TagList'
 import KanbanTemporal from './KanbanTemporal'
 import KanbanCategorico from './KanbanCategorico'
+import Sidebar, { ActiveModule } from './Sidebar'
+import Settings from './Settings'
+import MemoryList from './MemoryList'
+import EntertainmentList from './EntertainmentList'
 import styles from './TodoApp.module.css'
 
 type Filter = 'all' | 'active' | 'completed'
@@ -34,6 +38,7 @@ export default function TodoApp() {
   
   const [filter, setFilter] = useState<Filter>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('tasks')
+  const [activeModule, setActiveModule] = useState<ActiveModule>('tasks')
   const [autoTagEnabled, setAutoTagEnabled] = useState(false)
   const [toast, setToast] = useState<{ message: string; onUndo: () => void } | null>(null)
 
@@ -130,80 +135,82 @@ export default function TodoApp() {
 
   return (
     <div className={styles.root}>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <div className={styles.logoArea}>
-            <span className={styles.logoMark}>@</span>
-            <span className={styles.logoText}>Tarefas</span>
-          </div>
-          <div className={styles.headerMeta}>
-            <span className={styles.metaLabel}>
-              {counts.active === 0 && counts.all > 0
-                ? 'tudo feito'
-                : `${counts.active} pendente${counts.active !== 1 ? 's' : ''}`}
-            </span>
-            
-            {isInstallable && (
+      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+      
+      <div className={styles.mainWrapper}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <div className={styles.headerMeta}>
+              {activeModule === 'tasks' && (
+                <span className={styles.metaLabel}>
+                  {counts.active === 0 && counts.all > 0
+                    ? 'tudo feito'
+                    : `${counts.active} pendente${counts.active !== 1 ? 's' : ''}`}
+                </span>
+              )}
+              
+              {isInstallable && (
+                <button 
+                  onClick={promptInstall} 
+                  className={styles.logoutBtn}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#34A853', color: 'white' }}
+                  title="Instalar App no dispositivo"
+                >
+                  📲 Instalar App
+                </button>
+              )}
+
               <button 
-                onClick={promptInstall} 
+                onClick={() => sync(false)} 
+                disabled={isSyncing}
                 className={styles.logoutBtn}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#34A853', color: 'white' }}
-                title="Instalar App no dispositivo"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="Sincronizar com Google Drive"
               >
-                📲 Instalar App
+                {isSyncing ? 'Sincronizando...' : '☁️ Sync'}
               </button>
-            )}
-
-            <button 
-              onClick={() => sync(false)} 
-              disabled={isSyncing}
-              className={styles.logoutBtn} // Reusing styles for now
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              title="Sincronizar com Google Drive"
-            >
-              {isSyncing ? 'Sincronizando...' : '☁️ Sync'}
-            </button>
-            <span className={styles.userInfo}>{session?.user?.name}</span>
-            <button onClick={handleLogout} className={styles.logoutBtn}>
-              Sair
-            </button>
-          </div>
-        </div>
-        <div className={styles.headerRule} />
-      </header>
-
-      <main className={styles.main}>
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarSticky}>
-            <div className={styles.sidebarSection}>
-              <h2 className={styles.sectionLabel}>Visualizações</h2>
-              <nav className={styles.filters}>
-                <button
-                  onClick={() => setViewMode('tasks')}
-                  className={`${styles.filterBtn} ${viewMode === 'tasks' ? styles.filterBtnActive : ''}`}
-                >
-                  <span className={styles.filterLabel}>Lista de Tarefas</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('kanban-temporal')}
-                  className={`${styles.filterBtn} ${viewMode === 'kanban-temporal' ? styles.filterBtnActive : ''}`}
-                >
-                  <span className={styles.filterLabel}>Kanban Prazos</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('kanban-categorico')}
-                  className={`${styles.filterBtn} ${viewMode === 'kanban-categorico' ? styles.filterBtnActive : ''}`}
-                >
-                  <span className={styles.filterLabel}>Kanban Tags</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('tags')}
-                  className={`${styles.filterBtn} ${viewMode === 'tags' ? styles.filterBtnActive : ''}`}
-                >
-                  <span className={styles.filterLabel}>Gerenciar Tags</span>
-                </button>
-              </nav>
+              <span className={styles.userInfo}>{session?.user?.name}</span>
+              <button onClick={handleLogout} className={styles.logoutBtn}>
+                Sair
+              </button>
             </div>
+          </div>
+          <div className={styles.headerRule} />
+        </header>
+
+        {activeModule === 'tasks' && (
+          <main className={styles.main}>
+            <aside className={styles.subSidebar}>
+              <div className={styles.subSidebarSticky}>
+                <div className={styles.sidebarSection}>
+                  <h2 className={styles.sectionLabel}>Visualizações</h2>
+                  <nav className={styles.filters}>
+                    <button
+                      onClick={() => setViewMode('tasks')}
+                      className={`${styles.filterBtn} ${viewMode === 'tasks' ? styles.filterBtnActive : ''}`}
+                    >
+                      <span className={styles.filterLabel}>Lista de Tarefas</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('kanban-temporal')}
+                      className={`${styles.filterBtn} ${viewMode === 'kanban-temporal' ? styles.filterBtnActive : ''}`}
+                    >
+                      <span className={styles.filterLabel}>Kanban Prazos</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('kanban-categorico')}
+                      className={`${styles.filterBtn} ${viewMode === 'kanban-categorico' ? styles.filterBtnActive : ''}`}
+                    >
+                      <span className={styles.filterLabel}>Kanban Tags</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('tags')}
+                      className={`${styles.filterBtn} ${viewMode === 'tags' ? styles.filterBtnActive : ''}`}
+                    >
+                      <span className={styles.filterLabel}>Gerenciar Tags</span>
+                    </button>
+                  </nav>
+                </div>
 
             {viewMode === 'tasks' && (
               <div className={styles.sidebarSection}>
@@ -301,6 +308,36 @@ export default function TodoApp() {
           )}
         </section>
       </main>
+      )}
+
+      {activeModule === 'settings' && (
+        <div className={styles.mainFull}>
+          <Settings />
+        </div>
+      )}
+
+      {activeModule === 'memories' && (
+        <div className={styles.mainFull}>
+          <MemoryList />
+        </div>
+      )}
+
+      {activeModule === 'entertainment' && (
+        <div className={styles.mainFull}>
+          <EntertainmentList />
+        </div>
+      )}
+
+      {(activeModule === 'calendar' || activeModule === 'studies') && (
+        <div className={styles.mainFull}>
+          <h1 style={{ marginTop: '2rem', fontFamily: 'Cormorant Garamond', fontSize: '2.5rem', color: 'var(--ink)' }}>
+            Em breve...
+          </h1>
+          <p style={{ color: 'var(--ink-muted)', marginTop: '1rem' }}>
+            Este módulo está em desenvolvimento e estará disponível na próxima atualização.
+          </p>
+        </div>
+      )}
 
       {toast && (
         <div className={styles.toastContainer}>
@@ -316,6 +353,7 @@ export default function TodoApp() {
           <span>Dexie (IndexedDB) | Next.js (Local-First)</span>
         </div>
       </footer>
+      </div>
     </div>
   )
 }

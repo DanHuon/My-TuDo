@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { db, DBItem } from './db';
 
-const SYNC_FILE_NAME = 'sync.json';
+const SYNC_FILE_NAME = process.env.NEXT_PUBLIC_SYNC_FILE_NAME || 'sync.json';
 const AUTO_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const DEBOUNCE_DELAY = 5000; // 5 seconds
 

@@ -244,3 +244,106 @@ export const deleteTag = async (id: string) => {
     }
   }
 };
+
+// --- Memory Specific CRUD ---
+
+export const itemToMemory = (item: DBItem): import('./types').Memory => {
+  return {
+    id: item.id,
+    title: item.payload.title || '',
+    content: item.payload.content || '',
+    tags: item.payload.tags || [],
+    useMarkdown: item.payload.useMarkdown || false,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }
+}
+
+export const getMemories = async (): Promise<import('./types').Memory[]> => {
+  const items = await db.items.where({ type: 'memory', isDeleted: 0 }).toArray();
+  return items.map(itemToMemory).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export const addMemory = async (title: string, content: string, tags?: Tag[], useMarkdown?: boolean) => {
+  await addItem('memory', 'active', {
+    title,
+    content,
+    tags: tags || [],
+    useMarkdown: useMarkdown || false
+  })
+}
+
+export const editMemory = async (id: string, title: string, content: string, tags?: Tag[], useMarkdown?: boolean) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  await db.items.update(id, {
+    updatedAt: new Date().toISOString(),
+    payload: {
+      ...item.payload,
+      title,
+      content,
+      tags: tags || item.payload.tags || [],
+      useMarkdown: useMarkdown !== undefined ? useMarkdown : item.payload.useMarkdown
+    }
+  })
+}
+
+export const deleteMemory = async (id: string) => {
+  await softDeleteItem(id)
+}
+
+// --- Entertainment Specific CRUD ---
+
+export const itemToEntertainment = (item: DBItem): import('./types').Entertainment => {
+  return {
+    id: item.id,
+    title: item.payload.title || '',
+    originalTitle: item.payload.originalTitle || null,
+    category: item.payload.category || 'movie',
+    watchStatus: item.payload.watchStatus || 'plan',
+    posterUrl: item.payload.posterUrl || null,
+    coverUrl: item.payload.coverUrl || null,
+    synopsis: item.payload.synopsis || null,
+    startDate: item.payload.startDate || null,
+    endDate: item.payload.endDate || null,
+    cast: item.payload.cast || [],
+    externalProviderId: item.payload.externalProviderId || null,
+    externalRating: item.payload.externalRating || null,
+    progress: item.payload.progress || {
+      currentEpisode: null,
+      totalEpisodes: null,
+      currentSeason: null,
+      totalSeasons: null
+    },
+    rating: item.payload.rating || {
+      overall: null
+    },
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }
+}
+
+export const getEntertainments = async (): Promise<import('./types').Entertainment[]> => {
+  const items = await db.items.where({ type: 'entertainment', isDeleted: 0 }).toArray();
+  return items.map(itemToEntertainment).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export const addEntertainment = async (payload: Omit<import('./types').Entertainment, 'id' | 'createdAt' | 'updatedAt'>) => {
+  await addItem('entertainment', 'active', payload)
+}
+
+export const editEntertainment = async (id: string, payload: Partial<Omit<import('./types').Entertainment, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  await db.items.update(id, {
+    updatedAt: new Date().toISOString(),
+    payload: {
+      ...item.payload,
+      ...payload
+    }
+  })
+}
+
+export const deleteEntertainment = async (id: string) => {
+  await softDeleteItem(id)
+}

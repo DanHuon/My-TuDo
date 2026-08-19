@@ -157,7 +157,7 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
       </button>
 
       {/* Content */}
-      <div className={styles.content} onClick={!task.completed ? handleEdit : undefined}>
+      <div className={styles.content} onDoubleClick={!task.completed ? handleEdit : undefined}>
         <div className={styles.titleRow}>
           <span className={`${styles.title} ${task.completed ? styles.titleDone : ''}`}>
             {task.title}
@@ -266,7 +266,7 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
       </div>
 
       {/* Actions */}
-      <div className={`${styles.actions} ${hovered ? styles.actionsVisible : ''}`}>
+      <div className={styles.actions}>
         {!task.completed && (
           <button
             onClick={handleEdit}
