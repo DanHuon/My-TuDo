@@ -99,7 +99,7 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
         onDrop={(e) => handleDrop(e, 'scheduled')}
       >
         <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Com Prazo (Agendadas)</span>
+          <span className={styles.columnTitle}>Com Prazo</span>
           <span className={styles.columnCount}>{scheduledTasks.length}</span>
         </div>
         <div className={styles.taskList}>
@@ -156,7 +156,7 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
         onDrop={(e) => handleDrop(e, 'backlog')}
       >
         <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Sem Prazo (Backlog)</span>
+          <span className={styles.columnTitle}>Sem Prazo</span>
           <span className={styles.columnCount}>{backlogTasks.length}</span>
         </div>
         <div className={styles.taskList}>
@@ -195,7 +195,7 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
         onDrop={(e) => handleDrop(e, 'completed')}
       >
         <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Completas (Histórico)</span>
+          <span className={styles.columnTitle}>Completas</span>
           <span className={styles.columnCount}>{completedTasks.length}</span>
         </div>
         <div className={styles.taskList}>

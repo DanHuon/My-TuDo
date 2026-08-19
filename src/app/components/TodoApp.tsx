@@ -23,6 +23,10 @@ import MemoryList from './MemoryList'
 import EntertainmentList from './EntertainmentList'
 import styles from './TodoApp.module.css'
 
+import { polyfill } from "mobile-drag-drop"
+import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour"
+import "mobile-drag-drop/default.css"
+
 type Filter = 'all' | 'active' | 'completed'
 type ViewMode = 'tasks' | 'tags' | 'kanban-temporal' | 'kanban-categorico'
 
@@ -47,6 +51,14 @@ export default function TodoApp() {
     if (saved !== null) {
       setAutoTagEnabled(saved === 'true')
     }
+
+    // Initialize mobile drag and drop polyfill
+    polyfill({
+      dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+    })
+    
+    // Prevent default scroll behavior while dragging on touch devices
+    window.addEventListener('touchmove', function() {}, {passive: false})
   }, [])
 
   const handleAutoTagToggle = (checked: boolean) => {
