@@ -4,11 +4,10 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/lib/AuthContext'
 import TodoApp from './components/TodoApp'
-import AdminDashboard from './admin/dashboard/page'
 
 export default function Home() {
   const router = useRouter()
-  const { session, loading, isAdmin } = useAuth()
+  const { session, loading } = useAuth()
 
   useEffect(() => {
     if (!loading && !session) {
@@ -45,5 +44,5 @@ export default function Home() {
     return null
   }
 
-  return isAdmin ? <AdminDashboard /> : <TodoApp />
+  return <TodoApp />
 }
