@@ -4,6 +4,19 @@ import { useState } from 'react'
 import { Task, Tag } from '@/app/lib/types'
 import { formatDate } from '@/app/lib/formatDate'
 import styles from './Kanban.module.css'
+import { 
+  DndContext, 
+  DragOverlay, 
+  closestCorners, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+  useDraggable,
+  useDroppable
+} from '@dnd-kit/core'
 
 interface Props {
   tasks: Task[]
@@ -12,124 +25,173 @@ interface Props {
   onRemoveTagFromTask: (taskId: string, tagId: string) => void
 }
 
-export default function KanbanCategorico({ tasks, tags, onAddTagToTask, onRemoveTagFromTask }: Props) {
-  const [dragOverCol, setDragOverCol] = useState<string | null>(null)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+function DraggableCategoricoCard({ task, onClick, onRemoveTagFromTask }: any) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `categorico-${task.id}`,
+    data: { task }
+  })
 
-  // Get tasks matching a specific tag
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 999 : undefined,
+  } : undefined
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={`${styles.card} ${task.completed ? styles.cardCompleted : ''}`}
+      onClick={onClick}
+    >
+      <div className={styles.cardTitle}>{task.title}</div>
+      {task.description && <div className={styles.cardDesc}>{task.description}</div>}
+      
+      <div className={styles.cardFooter}>
+        {task.dueDate && (
+          <div className={styles.cardDates}>
+            <span className={styles.cardDate}>Prazo: {formatDate(task.dueDate, 'display')}</span>
+          </div>
+        )}
+        {task.tags && task.tags.length > 0 && (
+          <div className={styles.cardBadges}>
+            {task.tags.map((t: any) => (
+              <span key={t.id} className={styles.badge}>
+                {t.name}
+                <button 
+                  className={styles.badgeRemove}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemoveTagFromTask(task.id, t.id)
+                  }}
+                  title="Remover tag"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DroppableCategoricoColumn({ id, title, count, children }: any) {
+  const { isOver, setNodeRef } = useDroppable({ id })
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`${styles.column} ${isOver ? styles.columnDraggingOver : ''}`}
+      style={{ flex: '0 0 300px' }}
+    >
+      <div className={styles.columnHeader}>
+        <span className={styles.columnTitle}># {title}</span>
+        <span className={styles.columnCount}>{count}</span>
+      </div>
+      <div className={styles.taskList}>
+        {children}
+        {count === 0 && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: '4px', padding: '2rem', textAlign: 'center', minHeight: '120px' }}>
+            <span style={{ fontSize: '0.7rem', color: 'var(--ink-faint)', fontFamily: 'DM Mono' }}>Arrastar tarefa para adicionar esta tag</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function KanbanCategorico({ tasks, tags, onAddTagToTask, onRemoveTagFromTask }: Props) {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  )
+
   const getTasksForTag = (tagId: string) => {
     return tasks.filter(t => t.tags?.some(tag => tag.id === tagId))
   }
 
-  // Sort columns: largest density of tasks first
   const sortedTags = [...tags].sort((a, b) => {
     const countA = getTasksForTag(a.id).length
     const countB = getTasksForTag(b.id).length
     return countB - countA
   })
 
-  // Drag & Drop handlers
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId)
-    e.dataTransfer.effectAllowed = 'copy'
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event
+    setActiveTask(active.data.current?.task as Task)
   }
 
-  const handleDragOver = (e: React.DragEvent, tagId: string) => {
-    e.preventDefault()
-    setDragOverCol(tagId)
-  }
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTask(null)
+    const { active, over } = event
+    
+    if (!over) return
 
-  const handleDragLeave = () => {
-    setDragOverCol(null)
-  }
-
-  const handleDrop = (e: React.DragEvent, tagId: string) => {
-    e.preventDefault()
-    setDragOverCol(null)
-    const taskId = e.dataTransfer.getData('text/plain')
-    if (!taskId) return
-
-    onAddTagToTask(taskId, tagId)
+    const taskId = (active.id as string).replace('categorico-', '')
+    const tagId = over.id as string
+    
+    // Check if task already has this tag
+    const task = tasks.find(t => t.id === taskId)
+    if (task && !task.tags?.some(t => t.id === tagId)) {
+      onAddTagToTask(taskId, tagId)
+    }
   }
 
   return (
-    <div className={styles.boardCategorico}>
-      {sortedTags.map(tag => {
-        const tagTasks = getTasksForTag(tag.id)
-        const isDraggingOver = dragOverCol === tag.id
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className={styles.boardCategorico}>
+        {sortedTags.map(tag => {
+          const tagTasks = getTasksForTag(tag.id)
 
-        return (
-          <div 
-            key={tag.id}
-            className={`${styles.column} ${isDraggingOver ? styles.columnDraggingOver : ''}`}
-            style={{ flex: '0 0 300px' }} // dynamic width columns
-            onDragOver={(e) => handleDragOver(e, tag.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, tag.id)}
-          >
-            <div className={styles.columnHeader}>
-              <span className={styles.columnTitle}># {tag.name}</span>
-              <span className={styles.columnCount}>{tagTasks.length}</span>
-            </div>
-            
-            <div className={styles.taskList}>
+          return (
+            <DroppableCategoricoColumn key={tag.id} id={tag.id} title={tag.name} count={tagTasks.length}>
               {tagTasks.map(task => (
-                <div 
-                  key={task.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, task.id)}
-                  className={`${styles.card} ${task.completed ? styles.cardCompleted : ''}`}
+                <DraggableCategoricoCard 
+                  key={`${tag.id}-${task.id}`} 
+                  task={task} 
                   onClick={() => setSelectedTask(task)}
-                >
-                  <div className={styles.cardTitle}>{task.title}</div>
-                  {task.description && <div className={styles.cardDesc}>{task.description}</div>}
-                  
-                  <div className={styles.cardFooter}>
-                    {task.dueDate && (
-                      <div className={styles.cardDates}>
-                        <span className={styles.cardDate}>Prazo: {formatDate(task.dueDate, 'display')}</span>
-                      </div>
-                    )}
-                    {task.tags && task.tags.length > 0 && (
-                      <div className={styles.cardBadges}>
-                        {task.tags.map(t => (
-                          <span key={t.id} className={styles.badge}>
-                            {t.name}
-                            <button 
-                              className={styles.badgeRemove}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onRemoveTagFromTask(task.id, t.id)
-                              }}
-                              title="Remover tag"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  onRemoveTagFromTask={onRemoveTagFromTask}
+                />
               ))}
-              {tagTasks.length === 0 && (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: '4px', padding: '2rem', textAlign: 'center', minHeight: '120px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--ink-faint)', fontFamily: 'DM Mono' }}>Arrastar tarefa para adicionar esta tag</span>
-                </div>
-              )}
+            </DroppableCategoricoColumn>
+          )
+        })}
+
+        {sortedTags.length === 0 && (
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: '6px', padding: '4rem', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1rem', fontFamily: 'Cormorant Garamond', fontWeight: 500, color: 'var(--ink)' }}>Nenhuma tag criada</span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'DM Mono', color: 'var(--ink-muted)' }}>Crie tags na barra lateral para começar a visualizar as colunas.</span>
             </div>
           </div>
-        )
-      })}
+        )}
+      </div>
 
-      {sortedTags.length === 0 && (
-        <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: '6px', padding: '4rem', textAlign: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1rem', fontFamily: 'Cormorant Garamond', fontWeight: 500, color: 'var(--ink)' }}>Nenhuma tag criada</span>
-            <span style={{ fontSize: '0.75rem', fontFamily: 'DM Mono', color: 'var(--ink-muted)' }}>Crie tags na barra lateral para começar a visualizar as colunas.</span>
+      <DragOverlay>
+        {activeTask ? (
+          <div className={`${styles.card} ${activeTask.completed ? styles.cardCompleted : ''}`} style={{ cursor: 'grabbing', opacity: 0.8, transform: 'scale(1.02)' }}>
+            <div className={styles.cardTitle}>{activeTask.title}</div>
+            {activeTask.description && <div className={styles.cardDesc}>{activeTask.description}</div>}
           </div>
-        </div>
-      )}
+        ) : null}
+      </DragOverlay>
 
       {/* Modal de visualização da tarefa */}
       {selectedTask && (
@@ -183,6 +245,6 @@ export default function KanbanCategorico({ tasks, tags, onAddTagToTask, onRemove
           </div>
         </div>
       )}
-    </div>
+    </DndContext>
   )
 }

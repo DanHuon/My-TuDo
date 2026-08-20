@@ -4,6 +4,19 @@ import { useState } from 'react'
 import { Task } from '@/app/lib/types'
 import { formatDate } from '@/app/lib/formatDate'
 import styles from './Kanban.module.css'
+import { 
+  DndContext, 
+  DragOverlay, 
+  closestCorners, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+  useDraggable,
+  useDroppable
+} from '@dnd-kit/core'
 
 interface Props {
   tasks: Task[]
@@ -11,11 +24,105 @@ interface Props {
   onUpdateDueDate: (taskId: string, dueDate: string | null) => Promise<void>
 }
 
+// Draggable Task Card Component
+function DraggableTaskCard({ task, schedulingTaskId, isOverdue, onClick, onSetTempDueDate, tempDueDate, onConfirmSchedule, onCancelSchedule }: any) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: { task },
+    disabled: schedulingTaskId === task.id
+  })
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 999 : undefined,
+  } : undefined
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...listeners} 
+      {...attributes}
+      className={`${styles.card} ${isOverdue ? styles.cardOverdue : ''} ${task.completed ? styles.cardCompleted : ''}`}
+      onClick={onClick}
+    >
+      {isOverdue && <span className={styles.overdueTag}>Atrasado</span>}
+      <div className={styles.cardTitle}>{task.title}</div>
+      {task.description && <div className={styles.cardDesc}>{task.description}</div>}
+      
+      {schedulingTaskId === task.id ? (
+        <div className={styles.schedulingBox} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <span className={styles.schedulingTitle}>Agendar Prazo:</span>
+          <input 
+            type="date"
+            value={tempDueDate}
+            onChange={(e) => onSetTempDueDate(e.target.value)}
+            className={styles.schedulingInput}
+          />
+          <div className={styles.schedulingActions}>
+            <button onClick={() => onConfirmSchedule(task.id)} className={styles.schedulingConfirm}>Salvar</button>
+            <button onClick={() => onCancelSchedule()} className={styles.schedulingCancel}>Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.cardFooter}>
+          <div className={styles.cardDates}>
+            {task.completed ? (
+              <span className={styles.cardDate}>Concluída em: {formatDate(task.updatedAt, 'display')}</span>
+            ) : task.dueDate ? (
+              <span className={styles.cardDate}>Prazo: {formatDate(task.dueDate, 'display')}</span>
+            ) : (
+              <span className={styles.cardDate}>Criado em: {formatDate(task.createdAt, 'display')}</span>
+            )}
+          </div>
+          {task.tags && task.tags.length > 0 && (
+            <div className={styles.cardBadges}>
+              {task.tags.map((tag: any) => (
+                <span key={tag.id} className={styles.badge}>{tag.name}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Droppable Column Component
+function DroppableColumn({ id, title, count, children }: any) {
+  const { isOver, setNodeRef } = useDroppable({ id })
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`${styles.column} ${isOver ? styles.columnDraggingOver : ''}`}
+    >
+      <div className={styles.columnHeader}>
+        <span className={styles.columnTitle}>{title}</span>
+        <span className={styles.columnCount}>{count}</span>
+      </div>
+      <div className={styles.taskList}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: Props) {
-  const [dragOverCol, setDragOverCol] = useState<'scheduled' | 'backlog' | 'completed' | null>(null)
   const [schedulingTaskId, setSchedulingTaskId] = useState<string | null>(null)
   const [tempDueDate, setTempDueDate] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [activeTask, setActiveTask] = useState<Task | null>(null) // For DragOverlay
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Requires moving 8px before dragging starts, prevents accidental drags on click
+      },
+    }),
+    useSensor(KeyboardSensor)
+  )
 
   const isOverdue = (task: Task) => {
     if (!task.dueDate || task.completed) return false
@@ -46,36 +153,28 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
     .filter(t => t.completed && schedulingTaskId !== t.id)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
-  // Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId)
-    e.dataTransfer.effectAllowed = 'move'
+  // Handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event
+    setActiveTask(active.data.current?.task as Task)
   }
 
-  const handleDragOver = (e: React.DragEvent, col: 'scheduled' | 'backlog' | 'completed') => {
-    e.preventDefault()
-    setDragOverCol(col)
-  }
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTask(null)
+    const { active, over } = event
+    
+    if (!over) return
 
-  const handleDragLeave = () => {
-    setDragOverCol(null)
-  }
-
-  const handleDrop = (e: React.DragEvent, col: 'scheduled' | 'backlog' | 'completed') => {
-    e.preventDefault()
-    setDragOverCol(null)
-    const taskId = e.dataTransfer.getData('text/plain')
-    if (!taskId) return
-
+    const taskId = active.id as string
+    const col = over.id as 'scheduled' | 'backlog' | 'completed'
+    
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
 
-    // If dropped in the column it's already in, do nothing
     const currentCol = task.completed ? 'completed' : task.dueDate ? 'scheduled' : 'backlog'
     if (currentCol === col) return
 
     if (col === 'scheduled') {
-      // Começar o agendamento localmente sem mover imediatamente na API (prazo está nulo)
       setSchedulingTaskId(taskId)
       setTempDueDate(task.dueDate ? formatDate(task.dueDate, 'input') : new Date().toISOString().split('T')[0])
     } else {
@@ -90,141 +189,62 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
   }
 
   return (
-    <div className={styles.boardTemporal}>
-      {/* COLUMN 1: COM PRAZO */}
-      <div 
-        className={`${styles.column} ${dragOverCol === 'scheduled' ? styles.columnDraggingOver : ''}`}
-        onDragOver={(e) => handleDragOver(e, 'scheduled')}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, 'scheduled')}
-      >
-        <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Com Prazo</span>
-          <span className={styles.columnCount}>{scheduledTasks.length}</span>
-        </div>
-        <div className={styles.taskList}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className={styles.boardTemporal}>
+        <DroppableColumn id="scheduled" title="Com Prazo" count={scheduledTasks.length}>
           {scheduledTasks.map(task => (
-            <div 
-              key={task.id}
-              draggable={schedulingTaskId !== task.id}
-              onDragStart={(e) => handleDragStart(e, task.id)}
-              className={`${styles.card} ${isOverdue(task) ? styles.cardOverdue : ''}`}
+            <DraggableTaskCard 
+              key={task.id} 
+              task={task} 
+              schedulingTaskId={schedulingTaskId}
+              isOverdue={isOverdue(task)}
               onClick={() => schedulingTaskId !== task.id && setSelectedTask(task)}
-            >
-              {isOverdue(task) && <span className={styles.overdueTag}>Atrasado</span>}
-              <div className={styles.cardTitle}>{task.title}</div>
-              {task.description && <div className={styles.cardDesc}>{task.description}</div>}
-              
-              {schedulingTaskId === task.id ? (
-                <div className={styles.schedulingBox} onClick={(e) => e.stopPropagation()}>
-                  <span className={styles.schedulingTitle}>Agendar Prazo:</span>
-                  <input 
-                    type="date"
-                    value={tempDueDate}
-                    onChange={(e) => setTempDueDate(e.target.value)}
-                    className={styles.schedulingInput}
-                  />
-                  <div className={styles.schedulingActions}>
-                    <button onClick={() => handleConfirmSchedule(task.id)} className={styles.schedulingConfirm}>Salvar</button>
-                    <button onClick={() => setSchedulingTaskId(null)} className={styles.schedulingCancel}>Cancelar</button>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.cardFooter}>
-                  <div className={styles.cardDates}>
-                    <span className={styles.cardDate}>Prazo: {formatDate(task.dueDate, 'display')}</span>
-                  </div>
-                  {task.tags && task.tags.length > 0 && (
-                    <div className={styles.cardBadges}>
-                      {task.tags.map(tag => (
-                        <span key={tag.id} className={styles.badge}>{tag.name}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              onSetTempDueDate={setTempDueDate}
+              tempDueDate={tempDueDate}
+              onConfirmSchedule={handleConfirmSchedule}
+              onCancelSchedule={() => setSchedulingTaskId(null)}
+            />
           ))}
-        </div>
-      </div>
+        </DroppableColumn>
 
-      {/* COLUMN 2: SEM PRAZO */}
-      <div 
-        className={`${styles.column} ${dragOverCol === 'backlog' ? styles.columnDraggingOver : ''}`}
-        onDragOver={(e) => handleDragOver(e, 'backlog')}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, 'backlog')}
-      >
-        <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Sem Prazo</span>
-          <span className={styles.columnCount}>{backlogTasks.length}</span>
-        </div>
-        <div className={styles.taskList}>
+        <DroppableColumn id="backlog" title="Sem Prazo" count={backlogTasks.length}>
           {backlogTasks.map(task => (
-            <div 
-              key={task.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, task.id)}
-              className={styles.card}
+            <DraggableTaskCard 
+              key={task.id} 
+              task={task} 
+              schedulingTaskId={schedulingTaskId}
+              isOverdue={false}
               onClick={() => setSelectedTask(task)}
-            >
-              <div className={styles.cardTitle}>{task.title}</div>
-              {task.description && <div className={styles.cardDesc}>{task.description}</div>}
-              <div className={styles.cardFooter}>
-                <div className={styles.cardDates}>
-                  <span className={styles.cardDate}>Criado em: {formatDate(task.createdAt, 'display')}</span>
-                </div>
-                {task.tags && task.tags.length > 0 && (
-                  <div className={styles.cardBadges}>
-                    {task.tags.map(tag => (
-                      <span key={tag.id} className={styles.badge}>{tag.name}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            />
           ))}
-        </div>
+        </DroppableColumn>
+
+        <DroppableColumn id="completed" title="Completas" count={completedTasks.length}>
+          {completedTasks.map(task => (
+            <DraggableTaskCard 
+              key={task.id} 
+              task={task} 
+              schedulingTaskId={schedulingTaskId}
+              isOverdue={false}
+              onClick={() => setSelectedTask(task)}
+            />
+          ))}
+        </DroppableColumn>
       </div>
 
-      {/* COLUMN 3: COMPLETAS */}
-      <div 
-        className={`${styles.column} ${dragOverCol === 'completed' ? styles.columnDraggingOver : ''}`}
-        onDragOver={(e) => handleDragOver(e, 'completed')}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, 'completed')}
-      >
-        <div className={styles.columnHeader}>
-          <span className={styles.columnTitle}>Completas</span>
-          <span className={styles.columnCount}>{completedTasks.length}</span>
-        </div>
-        <div className={styles.taskList}>
-          {completedTasks.map(task => (
-            <div 
-              key={task.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, task.id)}
-              className={`${styles.card} ${styles.cardCompleted}`}
-              onClick={() => setSelectedTask(task)}
-            >
-              <div className={styles.cardTitle}>{task.title}</div>
-              {task.description && <div className={styles.cardDesc}>{task.description}</div>}
-              <div className={styles.cardFooter}>
-                <div className={styles.cardDates}>
-                  <span className={styles.cardDate}>Concluída em: {formatDate(task.updatedAt, 'display')}</span>
-                </div>
-                {task.tags && task.tags.length > 0 && (
-                  <div className={styles.cardBadges}>
-                    {task.tags.map(tag => (
-                      <span key={tag.id} className={styles.badge}>{tag.name}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <DragOverlay>
+        {activeTask ? (
+          <div className={`${styles.card} ${activeTask.completed ? styles.cardCompleted : ''}`} style={{ cursor: 'grabbing', opacity: 0.8, transform: 'scale(1.02)' }}>
+            <div className={styles.cardTitle}>{activeTask.title}</div>
+            {activeTask.description && <div className={styles.cardDesc}>{activeTask.description}</div>}
+          </div>
+        ) : null}
+      </DragOverlay>
 
       {/* Modal de visualização da tarefa */}
       {selectedTask && (
@@ -278,6 +298,6 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
           </div>
         </div>
       )}
-    </div>
+    </DndContext>
   )
 }

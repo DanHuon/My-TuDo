@@ -23,10 +23,6 @@ import MemoryList from './MemoryList'
 import EntertainmentList from './EntertainmentList'
 import styles from './TodoApp.module.css'
 
-import { polyfill } from "mobile-drag-drop"
-import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour"
-import "mobile-drag-drop/default.css"
-
 type Filter = 'all' | 'active' | 'completed'
 type ViewMode = 'tasks' | 'tags' | 'kanban-temporal' | 'kanban-categorico'
 
@@ -50,32 +46,6 @@ export default function TodoApp() {
     const saved = localStorage.getItem('auto-tag-new-tasks')
     if (saved !== null) {
       setAutoTagEnabled(saved === 'true')
-    }
-
-    // Initialize mobile drag and drop polyfill
-    polyfill({
-      dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
-      holdToDrag: 300 // Exige toque longo de 300ms antes de iniciar o arraste, permitindo o scroll natural
-    })
-    
-    // Polyfill require touchmove to be prevented while dragging to avoid browser cancellation
-    let isDragging = false
-    const handleDragStart = () => { isDragging = true }
-    const handleDragEnd = () => { isDragging = false }
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isDragging) {
-        e.preventDefault()
-      }
-    }
-
-    document.addEventListener('dragstart', handleDragStart)
-    document.addEventListener('dragend', handleDragEnd)
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
-
-    return () => {
-      document.removeEventListener('dragstart', handleDragStart)
-      document.removeEventListener('dragend', handleDragEnd)
-      window.removeEventListener('touchmove', handleTouchMove)
     }
   }, [])
 

@@ -85,15 +85,6 @@
   gap: 0.5rem;
   position: relative;
   user-select: none;
-  /* Support for holdToDrag polyfill - allows natural scroll until held */
-  touch-action: manipulation;
-  -webkit-touch-callout: none;
-}
-
-/* CSS rule injected to fulfill the polyfill requirement */
-/* Polyfill class applied by mobile-drag-drop when dragging */
-:global(.dnd-polyfilled) .card {
-  touch-action: none !important;
 }
 
 .card:hover {
