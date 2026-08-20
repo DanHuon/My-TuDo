@@ -13,12 +13,16 @@ export interface DBItem {
 
 export class MyTuDoDatabase extends Dexie {
   items!: Table<DBItem, string>;
+  gc_cache!: Table<import('./types').GcEvent, string>;
 
   constructor() {
     super('MyTuDoDB');
     this.version(1).stores({
       // Indexes for generic querying
       items: 'id, type, status, isDeleted, updatedAt, [type+isDeleted]'
+    });
+    this.version(2).stores({
+      gc_cache: 'id, calendarId, start, end, updatedAt'
     });
   }
 }
@@ -51,6 +55,10 @@ export const itemToTask = (item: DBItem): Task => {
     description: item.payload.description || null,
     completed: item.status === 'completed',
     dueDate: item.payload.dueDate || null,
+    rrule: item.payload.rrule || null,
+    eventId: item.payload.eventId || null,
+    completedDates: item.payload.completedDates || [],
+    reminders: item.payload.reminders || [],
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     tags: item.payload.tags || [],
@@ -102,16 +110,20 @@ export const getTasks = async (): Promise<Task[]> => {
   return items.map(itemToTask).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
-export const addTask = async (title: string, description?: string, dueDate?: string) => {
+export const addTask = async (title: string, description?: string, dueDate?: string, rrule?: string, eventId?: string, reminders?: {method: 'email'|'popup', minutes: number}[]) => {
   await addItem('task', 'active', {
     title,
     description: description || null,
     dueDate: dueDate || null,
+    rrule: rrule || null,
+    eventId: eventId || null,
+    reminders: reminders || [],
+    completedDates: [],
     tags: []
   });
 };
 
-export const editTask = async (id: string, title: string, description: string, dueDate?: string) => {
+export const editTask = async (id: string, title: string, description: string, dueDate?: string, rrule?: string, eventId?: string, reminders?: {method: 'email'|'popup', minutes: number}[], completedDates?: string[]) => {
   const item = await db.items.get(id);
   if (!item) return;
   const now = new Date().toISOString();
@@ -122,6 +134,10 @@ export const editTask = async (id: string, title: string, description: string, d
       title,
       description: description || null,
       dueDate: dueDate || null,
+      rrule: rrule !== undefined ? rrule : item.payload.rrule,
+      eventId: eventId !== undefined ? eventId : item.payload.eventId,
+      reminders: reminders !== undefined ? reminders : item.payload.reminders,
+      completedDates: completedDates !== undefined ? completedDates : item.payload.completedDates,
     }
   });
 };
@@ -129,12 +145,38 @@ export const editTask = async (id: string, title: string, description: string, d
 export const toggleTask = async (id: string) => {
   const item = await db.items.get(id);
   if (!item) return;
-  const newStatus = item.status === 'completed' ? 'active' : 'completed';
+
   const now = new Date().toISOString();
-  await db.items.update(id, {
-    status: newStatus,
-    updatedAt: now,
-  });
+  
+  if (item.payload.rrule) {
+    // It's a recurring task. Instead of marking the template as completed,
+    // we log today's date in completedDates.
+    const todayStr = now.split('T')[0];
+    const completedDates = item.payload.completedDates || [];
+    
+    // Toggle logic for the instance: if already completed today, uncomplete it.
+    let newCompletedDates;
+    if (completedDates.includes(todayStr)) {
+      newCompletedDates = completedDates.filter((d: string) => d !== todayStr);
+    } else {
+      newCompletedDates = [...completedDates, todayStr];
+    }
+    
+    await db.items.update(id, {
+      updatedAt: now,
+      payload: {
+        ...item.payload,
+        completedDates: newCompletedDates
+      }
+    });
+  } else {
+    // Normal task
+    const newStatus = item.status === 'completed' ? 'active' : 'completed';
+    await db.items.update(id, {
+      status: newStatus,
+      updatedAt: now,
+    });
+  }
 };
 
 export const deleteTask = async (id: string) => {
@@ -346,4 +388,17 @@ export const editEntertainment = async (id: string, payload: Partial<Omit<import
 
 export const deleteEntertainment = async (id: string) => {
   await softDeleteItem(id)
+}
+
+// --- Google Calendar Cache Operations ---
+export const getGcEvents = async (): Promise<import('./types').GcEvent[]> => {
+  return await db.gc_cache.toArray()
+}
+
+export const putGcEvents = async (events: import('./types').GcEvent[]) => {
+  await db.gc_cache.bulkPut(events)
+}
+
+export const clearGcEvents = async () => {
+  await db.gc_cache.clear()
 }

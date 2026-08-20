@@ -93,6 +93,9 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
     onRefresh()
   }
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isDoneToday = task.rrule ? (task.completedDates?.includes(todayStr) || false) : task.completed
+
   if (editing) {
     return (
       <div className={styles.editWrapper}>
@@ -139,17 +142,17 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
 
   return (
     <div
-      className={`${styles.wrapper} ${task.completed ? styles.wrapperCompleted : ''}`}
+      className={`${styles.wrapper} ${isDoneToday ? styles.wrapperCompleted : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setConfirmDelete(false) }}
     >
       {/* Left: checkbox + index line */}
       <button
         onClick={() => onToggle(task.id)}
-        className={`${styles.checkBtn} ${task.completed ? styles.checkBtnDone : ''}`}
-        aria-label={task.completed ? 'Desmarcar' : 'Concluir'}
+        className={`${styles.checkBtn} ${isDoneToday ? styles.checkBtnDone : ''}`}
+        aria-label={isDoneToday ? 'Desmarcar' : 'Concluir'}
       >
-        {task.completed ? (
+        {isDoneToday ? (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -157,12 +160,13 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
       </button>
 
       {/* Content */}
-      <div className={styles.content} onDoubleClick={!task.completed ? handleEdit : undefined}>
+      <div className={styles.content} onDoubleClick={!isDoneToday ? handleEdit : undefined}>
         <div className={styles.titleRow}>
-          <span className={`${styles.title} ${task.completed ? styles.titleDone : ''}`}>
+          <span className={`${styles.title} ${isDoneToday ? styles.titleDone : ''}`}>
             {task.title}
           </span>
-          {task.completed && (
+          {task.rrule && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 4px', borderRadius: '4px' }}>↻ Recorrente</span>}
+          {isDoneToday && (
             <span className={styles.doneTag}>concluída</span>
           )}
         </div>

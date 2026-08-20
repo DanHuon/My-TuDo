@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   const loginWithGoogle = useGoogleLogin({
-    scope: 'https://www.googleapis.com/auth/drive.appdata',
+    scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
     onSuccess: async (tokenResponse) => {
       setLoading(true)
       try {

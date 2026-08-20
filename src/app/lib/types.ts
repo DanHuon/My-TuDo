@@ -4,9 +4,26 @@ export interface Task {
   description: string | null
   completed: boolean
   dueDate?: string | null
+  rrule?: string | null
+  eventId?: string | null
+  completedDates?: string[]
+  reminders?: { method: 'email' | 'popup'; minutes: number }[]
   createdAt: string
   updatedAt: string
   tags?: Tag[]
+}
+
+export interface GcEvent {
+  id: string
+  calendarId: string
+  title: string
+  description: string | null
+  start: string
+  end: string
+  allDay: boolean
+  rrule?: string | null
+  backgroundColor?: string
+  updatedAt: string
 }
 
 export interface Tag {

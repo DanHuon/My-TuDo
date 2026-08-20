@@ -39,17 +39,23 @@ function DraggableTaskCard({ task, schedulingTaskId, isOverdue, onClick, onSetTe
     zIndex: isDragging ? 999 : undefined,
   } : undefined
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isDoneToday = task.rrule ? (task.completedDates?.includes(todayStr) || false) : task.completed
+
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
       {...listeners} 
       {...attributes}
-      className={`${styles.card} ${isOverdue ? styles.cardOverdue : ''} ${task.completed ? styles.cardCompleted : ''}`}
+      className={`${styles.card} ${isOverdue ? styles.cardOverdue : ''} ${isDoneToday ? styles.cardCompleted : ''}`}
       onClick={onClick}
     >
       {isOverdue && <span className={styles.overdueTag}>Atrasado</span>}
-      <div className={styles.cardTitle}>{task.title}</div>
+      <div className={styles.titleRow}>
+        <div className={styles.cardTitle}>{task.title}</div>
+        {task.rrule && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 4px', borderRadius: '4px' }}>↻ Recorrente</span>}
+      </div>
       {task.description && <div className={styles.cardDesc}>{task.description}</div>}
       
       {schedulingTaskId === task.id ? (
@@ -69,7 +75,7 @@ function DraggableTaskCard({ task, schedulingTaskId, isOverdue, onClick, onSetTe
       ) : (
         <div className={styles.cardFooter}>
           <div className={styles.cardDates}>
-            {task.completed ? (
+            {isDoneToday ? (
               <span className={styles.cardDate}>Concluída em: {formatDate(task.updatedAt, 'display')}</span>
             ) : task.dueDate ? (
               <span className={styles.cardDate}>Prazo: {formatDate(task.dueDate, 'display')}</span>
@@ -131,8 +137,14 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
     useSensor(KeyboardSensor)
   )
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isTaskCompleted = (t: Task) => {
+    if (t.rrule) return t.completedDates?.includes(todayStr) || false
+    return t.completed
+  }
+
   const isOverdue = (task: Task) => {
-    if (!task.dueDate || task.completed) return false
+    if (!task.dueDate || isTaskCompleted(task)) return false
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const due = new Date(task.dueDate)
@@ -141,7 +153,7 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
 
   // Filter & Sort Columns
   const scheduledTasks = tasks
-    .filter(t => (t.dueDate || schedulingTaskId === t.id) && !(t.completed && schedulingTaskId !== t.id))
+    .filter(t => (t.dueDate || schedulingTaskId === t.id) && !(isTaskCompleted(t) && schedulingTaskId !== t.id))
     .sort((a, b) => {
       const overA = isOverdue(a)
       const overB = isOverdue(b)
@@ -153,11 +165,11 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
     })
 
   const backlogTasks = tasks
-    .filter(t => !t.dueDate && schedulingTaskId !== t.id && !t.completed)
+    .filter(t => !t.dueDate && schedulingTaskId !== t.id && !isTaskCompleted(t))
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
   const completedTasks = tasks
-    .filter(t => t.completed && schedulingTaskId !== t.id)
+    .filter(t => isTaskCompleted(t) && schedulingTaskId !== t.id)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
   // Handlers

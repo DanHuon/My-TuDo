@@ -21,6 +21,7 @@ import Sidebar, { ActiveModule } from './Sidebar'
 import Settings from './Settings'
 import MemoryList from './MemoryList'
 import EntertainmentList from './EntertainmentList'
+import CalendarModule from './CalendarModule'
 import styles from './TodoApp.module.css'
 
 type Filter = 'all' | 'active' | 'completed'
@@ -121,16 +122,23 @@ export default function TodoApp() {
     if (hasTag) await toggleTaskTag(taskId, tagId)
   }
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isTaskCompleted = (t: Task) => {
+    if (t.rrule) return t.completedDates?.includes(todayStr) || false
+    return t.completed
+  }
+
   const filteredTasks = tasks.filter(t => {
-    if (filter === 'active') return !t.completed
-    if (filter === 'completed') return t.completed
+    const done = isTaskCompleted(t)
+    if (filter === 'active') return !done
+    if (filter === 'completed') return done
     return true
   })
 
   const counts = {
     all: tasks.length,
-    active: tasks.filter(t => !t.completed).length,
-    completed: tasks.filter(t => t.completed).length,
+    active: tasks.filter(t => !isTaskCompleted(t)).length,
+    completed: tasks.filter(t => isTaskCompleted(t)).length,
   }
 
   return (
@@ -328,7 +336,13 @@ export default function TodoApp() {
         </div>
       )}
 
-      {(activeModule === 'calendar' || activeModule === 'studies') && (
+      {activeModule === 'calendar' && (
+        <div className={styles.mainFull}>
+          <CalendarModule />
+        </div>
+      )}
+
+      {activeModule === 'studies' && (
         <div className={styles.mainFull}>
           <h1 style={{ marginTop: '2rem', fontFamily: 'Cormorant Garamond', fontSize: '2.5rem', color: 'var(--ink)' }}>
             Em breve...
