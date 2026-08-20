@@ -54,11 +54,29 @@ export default function TodoApp() {
 
     // Initialize mobile drag and drop polyfill
     polyfill({
-      dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+      dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
+      holdToDrag: 300 // Exige toque longo de 300ms antes de iniciar o arraste, permitindo o scroll natural
     })
     
-    // Prevent default scroll behavior while dragging on touch devices
-    window.addEventListener('touchmove', function() {}, {passive: false})
+    // Polyfill require touchmove to be prevented while dragging to avoid browser cancellation
+    let isDragging = false
+    const handleDragStart = () => { isDragging = true }
+    const handleDragEnd = () => { isDragging = false }
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener('dragstart', handleDragStart)
+    document.addEventListener('dragend', handleDragEnd)
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+    return () => {
+      document.removeEventListener('dragstart', handleDragStart)
+      document.removeEventListener('dragend', handleDragEnd)
+      window.removeEventListener('touchmove', handleTouchMove)
+    }
   }, [])
 
   const handleAutoTagToggle = (checked: boolean) => {
