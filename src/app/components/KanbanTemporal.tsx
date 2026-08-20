@@ -9,7 +9,8 @@ import {
   DragOverlay, 
   closestCorners, 
   KeyboardSensor, 
-  PointerSensor, 
+  MouseSensor,
+  TouchSensor, 
   useSensor, 
   useSensors,
   DragStartEvent,
@@ -116,9 +117,15 @@ export default function KanbanTemporal({ tasks, onMoveTask, onUpdateDueDate }: P
   const [activeTask, setActiveTask] = useState<Task | null>(null) // For DragOverlay
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // Requires moving 8px before dragging starts, prevents accidental drags on click
+        distance: 8, // Requires moving 8px before dragging starts on desktop
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300, // Toque longo de 300ms para iniciar o drag no mobile
+        tolerance: 5, // Permite que o dedo deslize até 5px durante o delay sem cancelar o drag
       },
     }),
     useSensor(KeyboardSensor)
