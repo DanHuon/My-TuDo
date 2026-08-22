@@ -24,6 +24,8 @@ import EntertainmentList from './EntertainmentList'
 import CalendarModule from './CalendarModule'
 import styles from './TodoApp.module.css'
 
+import { useCalendarSync } from '@/app/lib/useCalendarSync'
+
 type Filter = 'all' | 'active' | 'completed'
 type ViewMode = 'tasks' | 'tags' | 'kanban-temporal' | 'kanban-categorico'
 
@@ -31,6 +33,7 @@ export default function TodoApp() {
   const router = useRouter()
   const { session, logout } = useAuth()
   const { sync, isSyncing, lastSync } = useSync(session?.accessToken)
+  const calendarSync = useCalendarSync(session?.accessToken)
   const { isInstallable, promptInstall } = usePWAInstall()
   
   // Use Dexie live queries
@@ -222,8 +225,8 @@ export default function TodoApp() {
 
             {viewMode === 'tasks' && (
               <div className={styles.sidebarSection}>
-                <h2 className={styles.sectionLabel}>Nova Tarefa</h2>
-                <TaskForm onAdd={addTask} />
+                <h2 className={styles.sectionLabel}>Nova Tarefa / Evento</h2>
+                <TaskForm onAdd={addTask} onAddEvent={calendarSync.pushEventToGoogleCalendar} />
               </div>
             )}
 

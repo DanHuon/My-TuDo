@@ -81,19 +81,17 @@ export function useCalendarSync(accessToken: string | undefined) {
     const eventBody: any = {
       summary: task.title,
       description: task.description || '',
+      colorId: '5' // 5 is yellow in Google Calendar, distinguish tasks visually
     }
 
     if (task.dueDate) {
-      // If time is included, it's a dateTime. If it's just YYYY-MM-DD, it's an all-day event
       if (task.dueDate.includes('T')) {
         eventBody.start = { dateTime: task.dueDate }
-        // Default end time 1 hour later if not specified
         const endDate = new Date(task.dueDate)
         endDate.setHours(endDate.getHours() + 1)
         eventBody.end = { dateTime: endDate.toISOString() }
       } else {
         eventBody.start = { date: task.dueDate }
-        // End date for all-day events in Google Calendar is exclusive (next day)
         const endDate = new Date(task.dueDate)
         endDate.setDate(endDate.getDate() + 1)
         eventBody.end = { date: endDate.toISOString().split('T')[0] }
@@ -102,49 +100,29 @@ export function useCalendarSync(accessToken: string | undefined) {
       return null // No due date, shouldn't be in calendar
     }
 
-    if (task.rrule) {
-      eventBody.recurrence = [`RRULE:${task.rrule}`]
-    }
-
+    if (task.rrule) eventBody.recurrence = [`RRULE:${task.rrule}`]
     if (task.reminders && task.reminders.length > 0) {
-      eventBody.reminders = {
-        useDefault: false,
-        overrides: task.reminders
-      }
+      eventBody.reminders = { useDefault: false, overrides: task.reminders }
     }
 
     try {
-      let res
-      if (isNew) {
-        res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(eventBody)
-        })
-      } else {
-        res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${task.eventId}`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(eventBody)
-        })
-      }
-
-      if (!res.ok) throw new Error('Failed to push to Google Calendar')
+      const url = isNew 
+        ? `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
+        : `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${task.eventId}`
+      const method = isNew ? 'POST' : 'PATCH'
       
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventBody)
+      })
+
+      if (!res.ok) throw new Error('Failed to push task to Google Calendar')
       const data = await res.json()
       
-      // Update local task with eventId
       if (isNew) {
         await editTask(task.id, task.title, task.description || '', task.dueDate, task.rrule || undefined, data.id, task.reminders)
       }
-
-      // Refresh cache so the calendar view updates
       await fetchCalendarEvents()
       return data.id
     } catch (error) {
@@ -166,11 +144,72 @@ export function useCalendarSync(accessToken: string | undefined) {
     }
   }, [accessToken, fetchCalendarEvents])
 
+  // --- Events CRUD ---
+  const pushEventToGoogleCalendar = useCallback(async (event: Partial<GcEvent> & { isNew?: boolean }) => {
+    if (!accessToken) return null
+
+    const calendarId = event.calendarId || 'primary'
+    const isNew = event.isNew
+
+    const eventBody: any = {
+      summary: event.title,
+      description: event.description || '',
+    }
+
+    if (event.allDay) {
+      eventBody.start = { date: event.start?.split('T')[0] }
+      const endDate = new Date(event.end as string)
+      endDate.setDate(endDate.getDate() + 1)
+      eventBody.end = { date: endDate.toISOString().split('T')[0] }
+    } else {
+      eventBody.start = { dateTime: event.start }
+      eventBody.end = { dateTime: event.end }
+    }
+
+    if (event.rrule) eventBody.recurrence = [`RRULE:${event.rrule}`]
+
+    try {
+      const url = isNew 
+        ? `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
+        : `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${event.id}`
+      const method = isNew ? 'POST' : 'PATCH'
+      
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventBody)
+      })
+
+      if (!res.ok) throw new Error('Failed to push event to Google Calendar')
+      await fetchCalendarEvents()
+      const data = await res.json()
+      return data.id
+    } catch (error) {
+      console.error('Error pushing event to GC:', error)
+      return null
+    }
+  }, [accessToken, fetchCalendarEvents])
+
+  const deleteEventFromGoogleCalendar = useCallback(async (eventId: string, calendarId: string = 'primary') => {
+    if (!accessToken) return
+    try {
+      await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+      await fetchCalendarEvents()
+    } catch (error) {
+      console.error('Error deleting event from GC:', error)
+    }
+  }, [accessToken, fetchCalendarEvents])
+
   return {
     isSyncing,
     lastSync,
     fetchCalendarEvents,
     pushTaskToGoogleCalendar,
-    deleteTaskFromGoogleCalendar
+    deleteTaskFromGoogleCalendar,
+    pushEventToGoogleCalendar,
+    deleteEventFromGoogleCalendar
   }
 }
