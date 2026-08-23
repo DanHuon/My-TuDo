@@ -26,6 +26,7 @@ dist/
 MEMORIA_IA.md
 REQUISITOS_IMPLEMENTACAO.md
 ROADMAP.md
+BROWSER_TESTING_GUIDE.md
 
 # Debug logs
 npm-debug.log*

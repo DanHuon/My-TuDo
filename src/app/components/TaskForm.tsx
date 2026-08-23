@@ -136,7 +136,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
               <span style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Dia Inteiro</span>
             </div>
             
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Início:</div>
                 <input

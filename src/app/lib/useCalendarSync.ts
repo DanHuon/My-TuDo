@@ -86,7 +86,7 @@ export function useCalendarSync(accessToken: string | undefined) {
 
     if (task.dueDate) {
       if (task.dueDate.includes('T')) {
-        eventBody.start = { dateTime: task.dueDate }
+        eventBody.start = { dateTime: new Date(task.dueDate).toISOString() }
         const endDate = new Date(task.dueDate)
         endDate.setHours(endDate.getHours() + 1)
         eventBody.end = { dateTime: endDate.toISOString() }
@@ -117,7 +117,11 @@ export function useCalendarSync(accessToken: string | undefined) {
         body: JSON.stringify(eventBody)
       })
 
-      if (!res.ok) throw new Error('Failed to push task to Google Calendar')
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error('GC Error:', errText)
+        throw new Error('Failed to push task to Google Calendar')
+      }
       const data = await res.json()
       
       if (isNew) {
@@ -162,8 +166,8 @@ export function useCalendarSync(accessToken: string | undefined) {
       endDate.setDate(endDate.getDate() + 1)
       eventBody.end = { date: endDate.toISOString().split('T')[0] }
     } else {
-      eventBody.start = { dateTime: event.start }
-      eventBody.end = { dateTime: event.end }
+      eventBody.start = { dateTime: new Date(event.start as string).toISOString() }
+      eventBody.end = { dateTime: new Date(event.end as string).toISOString() }
     }
 
     if (event.rrule) eventBody.recurrence = [`RRULE:${event.rrule}`]

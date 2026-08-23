@@ -17,6 +17,7 @@ import TagForm from './TagForm'
 import TagList from './TagList'
 import KanbanTemporal from './KanbanTemporal'
 import KanbanCategorico from './KanbanCategorico'
+import EventList from './EventList'
 import Sidebar, { ActiveModule } from './Sidebar'
 import Settings from './Settings'
 import MemoryList from './MemoryList'
@@ -27,7 +28,7 @@ import styles from './TodoApp.module.css'
 import { useCalendarSync } from '@/app/lib/useCalendarSync'
 
 type Filter = 'all' | 'active' | 'completed'
-type ViewMode = 'tasks' | 'tags' | 'kanban-temporal' | 'kanban-categorico'
+type ViewMode = 'tasks' | 'tags' | 'kanban-temporal' | 'kanban-categorico' | 'events'
 
 export default function TodoApp() {
   const router = useRouter()
@@ -203,6 +204,12 @@ export default function TodoApp() {
                       <span className={styles.filterLabel}>Lista de Tarefas</span>
                     </button>
                     <button
+                      onClick={() => setViewMode('events')}
+                      className={`${styles.filterBtn} ${viewMode === 'events' ? styles.filterBtnActive : ''}`}
+                    >
+                      <span className={styles.filterLabel}>Lista de Eventos</span>
+                    </button>
+                    <button
                       onClick={() => setViewMode('kanban-temporal')}
                       className={`${styles.filterBtn} ${viewMode === 'kanban-temporal' ? styles.filterBtnActive : ''}`}
                     >
@@ -223,7 +230,7 @@ export default function TodoApp() {
                   </nav>
                 </div>
 
-            {viewMode === 'tasks' && (
+            {(viewMode === 'tasks' || viewMode === 'events') && (
               <div className={styles.sidebarSection}>
                 <h2 className={styles.sectionLabel}>Nova Tarefa / Evento</h2>
                 <TaskForm onAdd={addTask} onAddEvent={calendarSync.pushEventToGoogleCalendar} />
@@ -291,7 +298,9 @@ export default function TodoApp() {
         </aside>
 
         <section className={styles.content}>
-          {viewMode === 'tags' ? (
+          {viewMode === 'events' ? (
+            <EventList />
+          ) : viewMode === 'tags' ? (
             <TagList tags={tags} onEdit={editTag} onDelete={deleteTag} />
           ) : viewMode === 'kanban-temporal' ? (
             <KanbanTemporal
