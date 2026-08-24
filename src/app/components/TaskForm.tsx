@@ -23,6 +23,41 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
   const [rruleStr, setRruleStr] = useState(initialData?.rrule || '')
+  
+  // Visual Formatting
+  const [taskInputType, setTaskInputType] = useState('text')
+  const [startInputType, setStartInputType] = useState('text')
+  const [endInputType, setEndInputType] = useState('text')
+
+  const formatForDisplay = (val: string, allDay: boolean) => {
+    if (!val) return ''
+    const parts = val.split('T')
+    const datePart = parts[0]
+    const [y, m, d] = datePart.split('-')
+    if (allDay || parts.length === 1) return `${d}/${m}/${y}`
+    const timePart = parts[1].substring(0, 5)
+    return `${d}/${m}/${y} ${timePart}`
+  }
+
+  // Custom RRULE State
+  const [showCustomRrule, setShowCustomRrule] = useState(false)
+  const [customRruleFreq, setCustomRruleFreq] = useState('DAILY')
+  const [customRruleInterval, setCustomRruleInterval] = useState(1)
+  const [customRruleEndType, setCustomRruleEndType] = useState('never')
+  const [customRruleUntil, setCustomRruleUntil] = useState('')
+  const [customRruleCount, setCustomRruleCount] = useState(1)
+
+  const handleCustomRruleSave = () => {
+    let rule = `FREQ=${customRruleFreq};INTERVAL=${customRruleInterval}`
+    if (customRruleEndType === 'until' && customRruleUntil) {
+      const formattedUntil = customRruleUntil.replace(/-/g, '') + 'T235959Z'
+      rule += `;UNTIL=${formattedUntil}`
+    } else if (customRruleEndType === 'count' && customRruleCount > 0) {
+      rule += `;COUNT=${customRruleCount}`
+    }
+    setRruleStr(rule)
+    setShowCustomRrule(false)
+  }
 
   const initialLocalReminders: LocalReminder[] = (initialData?.reminders || []).map((r: any) => {
     if (r.minutes > 0) {
@@ -139,8 +174,10 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
           <>
             <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Data e Hora (opcional):</div>
             <input
-              type="datetime-local"
-              value={taskDateTime}
+              type={taskInputType}
+              value={taskInputType === 'text' ? formatForDisplay(taskDateTime, false) : taskDateTime}
+              onFocus={() => setTaskInputType('datetime-local')}
+              onBlur={() => setTaskInputType('text')}
               onChange={(e) => setTaskDateTime(e.target.value)}
               className={styles.titleInput}
               style={{ marginTop: '4px' }}
@@ -161,8 +198,10 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Início:</div>
                 <input
-                  type={eventAllDay ? "date" : "datetime-local"}
-                  value={eventStart}
+                  type={startInputType}
+                  value={startInputType === 'text' ? formatForDisplay(eventStart, eventAllDay) : eventStart}
+                  onFocus={() => setStartInputType(eventAllDay ? "date" : "datetime-local")}
+                  onBlur={() => setStartInputType('text')}
                   onChange={(e) => setEventStart(e.target.value)}
                   className={styles.titleInput}
                   disabled={submitting}
@@ -172,8 +211,10 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Fim (opcional):</div>
                 <input
-                  type={eventAllDay ? "date" : "datetime-local"}
-                  value={eventEnd}
+                  type={endInputType}
+                  value={endInputType === 'text' ? formatForDisplay(eventEnd, eventAllDay) : eventEnd}
+                  onFocus={() => setEndInputType(eventAllDay ? "date" : "datetime-local")}
+                  onBlur={() => setEndInputType('text')}
                   onChange={(e) => setEventEnd(e.target.value)}
                   className={styles.titleInput}
                   disabled={submitting}
@@ -191,12 +232,19 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         )}
 
         <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Recorrência:</div>
-        <select value={rruleStr} onChange={(e) => setRruleStr(e.target.value)} className={styles.titleInput} disabled={submitting} style={{ background: 'transparent' }}>
+        <select value={rruleStr} onChange={(e) => {
+          if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
+          else setRruleStr(e.target.value)
+        }} className={styles.titleInput} disabled={submitting} style={{ background: 'transparent' }}>
           <option value="">Sem repetição</option>
           <option value="FREQ=DAILY">Diariamente</option>
           <option value="FREQ=WEEKLY">Semanalmente</option>
           <option value="FREQ=MONTHLY">Mensalmente</option>
           <option value="FREQ=YEARLY">Anualmente</option>
+          <option value="CUSTOM">Personalizado...</option>
+          {rruleStr && !['', 'FREQ=DAILY', 'FREQ=WEEKLY', 'FREQ=MONTHLY', 'FREQ=YEARLY', 'CUSTOM'].includes(rruleStr) && (
+            <option value={rruleStr}>Recorrência Personalizada Ativa</option>
+          )}
         </select>
         <div className={styles.inputLine} />
 
@@ -235,6 +283,47 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
           </button>
         )}
       </div>
+
+      {showCustomRrule && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', border: '1px solid var(--border)' }}>
+            <h4 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond', color: 'var(--ink)' }}>Recorrência Personalizada</h4>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--ink-muted)' }}>Repetir a cada:</span>
+              <input type="number" min="1" value={customRruleInterval} onChange={e => setCustomRruleInterval(parseInt(e.target.value) || 1)} className={styles.titleInput} style={{ width: '60px', background: 'var(--bg-card)', padding: '6px' }} />
+              <select value={customRruleFreq} onChange={e => setCustomRruleFreq(e.target.value)} className={styles.titleInput} style={{ width: '120px', background: 'var(--bg-card)', padding: '6px' }}>
+                <option value="DAILY">dia(s)</option>
+                <option value="WEEKLY">semana(s)</option>
+                <option value="MONTHLY">mês(es)</option>
+                <option value="YEARLY">ano(s)</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '12px', fontSize: '0.9rem', color: 'var(--ink-muted)' }}>Termina:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                  <input type="radio" name="endType" checked={customRruleEndType === 'never'} onChange={() => setCustomRruleEndType('never')} /> Nunca
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                  <input type="radio" name="endType" checked={customRruleEndType === 'until'} onChange={() => setCustomRruleEndType('until')} /> Em 
+                  <input type="date" value={customRruleUntil} onChange={e => setCustomRruleUntil(e.target.value)} disabled={customRruleEndType !== 'until'} className={styles.titleInput} style={{ background: 'var(--bg-card)', padding: '4px' }} />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                  <input type="radio" name="endType" checked={customRruleEndType === 'count'} onChange={() => setCustomRruleEndType('count')} /> Após 
+                  <input type="number" min="1" value={customRruleCount} onChange={e => setCustomRruleCount(parseInt(e.target.value) || 1)} disabled={customRruleEndType !== 'count'} className={styles.titleInput} style={{ width: '60px', background: 'var(--bg-card)', padding: '4px' }} /> ocorrências
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => { setShowCustomRrule(false); setRruleStr(''); }} className={styles.submitBtn} style={{ background: 'var(--bg-card)', color: 'var(--ink)' }}>Cancelar</button>
+              <button type="button" onClick={handleCustomRruleSave} className={styles.submitBtn}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   )
 }

@@ -249,6 +249,29 @@ export default function CalendarModule() {
             setSelectedEvent(event)
             setModalMode('view')
           }}
+          selectable={true}
+          onSelectSlot={(slotInfo) => {
+            const isAllDay = slotInfo.action === 'select' || slotInfo.slots.length === 1
+            const st = moment(slotInfo.start)
+            
+            const newEv = {
+              title: '',
+              start: st.format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
+              end: moment(slotInfo.end).format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
+              allDay: isAllDay,
+              calendarId: 'primary'
+            }
+            setSelectedEvent({
+              title: 'Novo Item',
+              source: 'mytudo',
+              start: slotInfo.start,
+              end: slotInfo.end,
+              allDay: isAllDay,
+              originalEvent: newEv,
+              isNew: true
+            })
+            setModalMode('edit')
+          }}
         />
       </div>
 
