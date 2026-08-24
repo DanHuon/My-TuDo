@@ -49,6 +49,14 @@ export default function CalendarModule() {
     const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1)
     const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0) // last day of +2 months
 
+    const parseLocalDate = (dateStr: string) => {
+      if (!dateStr.includes('T')) {
+        const [y, m, d] = dateStr.split('-').map(Number)
+        return new Date(y, m - 1, d)
+      }
+      return new Date(dateStr)
+    }
+
     const processItem = (itemProps: any, rruleStr: string | null) => {
       if (!rruleStr) {
         events.push(itemProps)
@@ -101,8 +109,8 @@ export default function CalendarModule() {
         processItem({
           id: `gc-${ev.id}`,
           title: ev.title,
-          start: new Date(ev.start),
-          end: new Date(ev.end),
+          start: parseLocalDate(ev.start),
+          end: parseLocalDate(ev.end),
           allDay: ev.allDay,
           source: 'google',
           originalEvent: ev,
@@ -118,12 +126,15 @@ export default function CalendarModule() {
         // Check if it's completed on the specific generated dates later?
         // Actually, if it has RRULE, we might need to filter out instances that are in completedDates.
         if (t.dueDate && (!t.completed || t.rrule)) {
-          const start = new Date(t.dueDate)
+          const start = parseLocalDate(t.dueDate)
           const isAllDay = !t.dueDate.includes('T')
           
-          let end = new Date(t.dueDate)
+          let end = parseLocalDate(t.dueDate)
           if (!isAllDay) {
             end.setHours(end.getHours() + 1)
+          } else {
+            // For react-big-calendar, all-day events should end on the NEXT day at 00:00
+            end.setDate(end.getDate() + 1)
           }
 
           processItem({

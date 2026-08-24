@@ -100,9 +100,10 @@ export function useCalendarSync(accessToken: string | undefined) {
         }
       } else {
         eventBody.start = { date: task.dueDate }
-        const endDate = new Date(task.dueDate)
-        endDate.setDate(endDate.getDate() + 1)
-        eventBody.end = { date: endDate.toISOString().split('T')[0] }
+        const [y, m, d] = task.dueDate.split('-').map(Number)
+        const localEnd = new Date(y, m - 1, d + 1)
+        const nextDayStr = `${localEnd.getFullYear()}-${String(localEnd.getMonth()+1).padStart(2, '0')}-${String(localEnd.getDate()).padStart(2, '0')}`
+        eventBody.end = { date: nextDayStr }
       }
     } else {
       return null // No due date, shouldn't be in calendar
@@ -169,19 +170,25 @@ export function useCalendarSync(accessToken: string | undefined) {
     }
 
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const effStart = event.start as string
+    const effEnd = (event.end as string) || effStart
 
     if (event.allDay) {
-      eventBody.start = { date: event.start?.split('T')[0] }
-      const endDate = new Date(event.end as string)
-      endDate.setDate(endDate.getDate() + 1)
-      eventBody.end = { date: endDate.toISOString().split('T')[0] }
+      const startStr = effStart.split('T')[0]
+      eventBody.start = { date: startStr }
+      
+      const endStr = effEnd.split('T')[0]
+      const [y, m, d] = endStr.split('-').map(Number)
+      const localEnd = new Date(y, m - 1, d + 1)
+      const nextDayStr = `${localEnd.getFullYear()}-${String(localEnd.getMonth()+1).padStart(2, '0')}-${String(localEnd.getDate()).padStart(2, '0')}`
+      eventBody.end = { date: nextDayStr }
     } else {
       eventBody.start = { 
-        dateTime: new Date(event.start as string).toISOString(),
+        dateTime: new Date(effStart).toISOString(),
         timeZone: localTimeZone 
       }
       eventBody.end = { 
-        dateTime: new Date(event.end as string).toISOString(),
+        dateTime: new Date(effEnd).toISOString(),
         timeZone: localTimeZone
       }
     }

@@ -149,14 +149,13 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Fim:</div>
+                <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Fim (opcional):</div>
                 <input
                   type={eventAllDay ? "date" : "datetime-local"}
                   value={eventEnd}
                   onChange={(e) => setEventEnd(e.target.value)}
                   className={styles.titleInput}
                   disabled={submitting}
-                  required
                 />
               </div>
             </div>
@@ -200,7 +199,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
-        <button type="submit" disabled={!title.trim() || submitting || (tab === 'event' && (!eventStart || !eventEnd))} className={styles.submitBtn} style={{ flex: 1 }}>
+        <button type="submit" disabled={!title.trim() || submitting || (tab === 'event' && !eventStart)} className={styles.submitBtn} style={{ flex: 1 }}>
           {submitting ? <span className={styles.submitSpinner} /> : <><span className={styles.submitIcon}>◆</span> Salvar</>}
         </button>
         {onCancel && (
