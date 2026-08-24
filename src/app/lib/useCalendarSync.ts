@@ -84,12 +84,20 @@ export function useCalendarSync(accessToken: string | undefined) {
       colorId: '5' // 5 is yellow in Google Calendar, distinguish tasks visually
     }
 
+    const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     if (task.dueDate) {
       if (task.dueDate.includes('T')) {
-        eventBody.start = { dateTime: new Date(task.dueDate).toISOString() }
+        eventBody.start = { 
+          dateTime: new Date(task.dueDate).toISOString(),
+          timeZone: localTimeZone 
+        }
         const endDate = new Date(task.dueDate)
         endDate.setHours(endDate.getHours() + 1)
-        eventBody.end = { dateTime: endDate.toISOString() }
+        eventBody.end = { 
+          dateTime: endDate.toISOString(),
+          timeZone: localTimeZone
+        }
       } else {
         eventBody.start = { date: task.dueDate }
         const endDate = new Date(task.dueDate)
@@ -160,14 +168,22 @@ export function useCalendarSync(accessToken: string | undefined) {
       description: event.description || '',
     }
 
+    const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     if (event.allDay) {
       eventBody.start = { date: event.start?.split('T')[0] }
       const endDate = new Date(event.end as string)
       endDate.setDate(endDate.getDate() + 1)
       eventBody.end = { date: endDate.toISOString().split('T')[0] }
     } else {
-      eventBody.start = { dateTime: new Date(event.start as string).toISOString() }
-      eventBody.end = { dateTime: new Date(event.end as string).toISOString() }
+      eventBody.start = { 
+        dateTime: new Date(event.start as string).toISOString(),
+        timeZone: localTimeZone 
+      }
+      eventBody.end = { 
+        dateTime: new Date(event.end as string).toISOString(),
+        timeZone: localTimeZone
+      }
     }
 
     if (event.rrule) eventBody.recurrence = [`RRULE:${event.rrule}`]

@@ -173,7 +173,11 @@ export default function TodoApp() {
               )}
 
               <button 
-                onClick={() => sync(false)} 
+                onClick={() => {
+                  if (!isSyncing) {
+                    setTimeout(() => sync(false), 0)
+                  }
+                }} 
                 disabled={isSyncing}
                 className={styles.logoutBtn}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}

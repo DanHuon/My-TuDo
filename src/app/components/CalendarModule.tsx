@@ -11,6 +11,7 @@ import { GcEvent, Task } from '@/app/lib/types'
 import { useAuth } from '@/app/lib/AuthContext'
 import { useCalendarSync } from '@/app/lib/useCalendarSync'
 import TaskForm from '@/app/components/TaskForm'
+import { rrulestr } from 'rrule'
 import styles from './CalendarModule.module.css'
 
 // Setup moment locale
@@ -27,8 +28,7 @@ export default function CalendarModule() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view')
 
-  // Fetch MyTuDo Tasks (that have due dates)
-  const tasks = useLiveQuery(
+    const tasks = useLiveQuery(
     () => db.items.where({ type: 'task', isDeleted: 0 }).toArray()
   )
 
@@ -45,10 +45,60 @@ export default function CalendarModule() {
   const unifiedEvents = useMemo(() => {
     const events: any[] = []
 
+    // Define a window for expanding recurrences (e.g., current date +/- 2 months)
+    const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1)
+    const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0) // last day of +2 months
+
+    const processItem = (itemProps: any, rruleStr: string | null) => {
+      if (!rruleStr) {
+        events.push(itemProps)
+        return
+      }
+      
+      try {
+        // Build a proper RRULE string if it doesn't have the prefix
+        let formattedRule = rruleStr
+        if (!formattedRule.startsWith('RRULE:')) {
+          formattedRule = `RRULE:${formattedRule}`
+        }
+        
+        // Ensure DTSTART is present so rrule.js knows when to start counting
+        // Google Calendar rrule strings often don't have DTSTART in the rrule itself
+        const dtStartStr = new Date(itemProps.start).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+        if (!formattedRule.includes('DTSTART')) {
+          formattedRule = `DTSTART:${dtStartStr}\n${formattedRule}`
+        }
+        
+        const rule = rrulestr(formattedRule)
+        const instances = rule.between(viewStart, viewEnd, true)
+        
+        instances.forEach((instanceDate) => {
+          // rrule.js returns dates in UTC. We need to preserve the original time but shift the date.
+          const origStart = new Date(itemProps.start)
+          const origEnd = new Date(itemProps.end)
+          
+          const durMs = origEnd.getTime() - origStart.getTime()
+          
+          const instStart = new Date(instanceDate)
+          const instEnd = new Date(instStart.getTime() + durMs)
+
+          events.push({
+            ...itemProps,
+            id: `${itemProps.id}-${instStart.getTime()}`,
+            start: instStart,
+            end: instEnd
+          })
+        })
+      } catch (e) {
+        console.error('Failed to parse RRULE:', rruleStr, e)
+        events.push(itemProps) // Fallback to single event
+      }
+    }
+
     // 1. Add GC Events
     if (gcEvents) {
       gcEvents.forEach((ev: GcEvent) => {
-        events.push({
+        processItem({
           id: `gc-${ev.id}`,
           title: ev.title,
           start: new Date(ev.start),
@@ -57,7 +107,7 @@ export default function CalendarModule() {
           source: 'google',
           originalEvent: ev,
           backgroundColor: ev.backgroundColor
-        })
+        }, ev.rrule || null)
       })
     }
 
@@ -65,7 +115,9 @@ export default function CalendarModule() {
     if (tasks) {
       tasks.forEach((item) => {
         const t = itemToTask(item)
-        if (t.dueDate && !t.completed) {
+        // Check if it's completed on the specific generated dates later?
+        // Actually, if it has RRULE, we might need to filter out instances that are in completedDates.
+        if (t.dueDate && (!t.completed || t.rrule)) {
           const start = new Date(t.dueDate)
           const isAllDay = !t.dueDate.includes('T')
           
@@ -74,7 +126,7 @@ export default function CalendarModule() {
             end.setHours(end.getHours() + 1)
           }
 
-          events.push({
+          processItem({
             id: `task-${t.id}`,
             title: t.completed ? `✓ ${t.title}` : t.title,
             start,
@@ -84,13 +136,25 @@ export default function CalendarModule() {
             originalEvent: t,
             backgroundColor: t.completed ? 'var(--success-soft)' : 'var(--accent)',
             textColor: t.completed ? 'var(--success)' : '#fff'
-          })
+          }, t.rrule || null)
         }
       })
     }
 
-    return events
-  }, [tasks, gcEvents])
+    // Filter out generated instances that were explicitly marked as completed in MyTuDo (for tasks)
+    return events.filter(ev => {
+      if (ev.source === 'mytudo' && ev.originalEvent.rrule && ev.originalEvent.completedDates) {
+        const instDateStr = ev.start.toISOString().split('T')[0]
+        if (ev.originalEvent.completedDates.includes(instDateStr)) {
+          // You could return false to hide it, or we mark it as completed visually
+          ev.title = `✓ ${ev.originalEvent.title}`
+          ev.backgroundColor = 'var(--success-soft)'
+          ev.textColor = 'var(--success)'
+        }
+      }
+      return true
+    })
+  }, [tasks, gcEvents, currentDate])
 
   const eventStyleGetter = (event: any, start: any, end: any, isSelected: boolean) => {
     return {
@@ -134,7 +198,11 @@ export default function CalendarModule() {
         <h2 className={styles.title}>Meu Calendário</h2>
         <div className={styles.actions}>
           {isSyncing && <span className={styles.syncBadge}>Sincronizando...</span>}
-          <button onClick={() => fetchCalendarEvents()} className={styles.syncBtn}>
+          <button onClick={() => {
+            if (!isSyncing) {
+              setTimeout(() => fetchCalendarEvents(), 0)
+            }
+          }} className={styles.syncBtn} disabled={isSyncing}>
             ↻ Atualizar
           </button>
         </div>
