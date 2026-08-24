@@ -251,19 +251,25 @@ export default function CalendarModule() {
           }}
           selectable={true}
           onSelectSlot={(slotInfo) => {
-            const isAllDay = slotInfo.action === 'select' || slotInfo.slots.length === 1
+            const isAllDay = slotInfo.start.getHours() === 0 && slotInfo.start.getMinutes() === 0 && 
+                             (slotInfo.end.getHours() === 0 || slotInfo.end.getHours() === 23)
+                             
             const st = moment(slotInfo.start)
             
+            const endStr = (slotInfo.action === 'click' && !isAllDay) 
+              ? '' 
+              : moment(slotInfo.end).format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm')
+
             const newEv = {
               title: '',
               start: st.format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
-              end: moment(slotInfo.end).format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
+              end: endStr,
               allDay: isAllDay,
               calendarId: 'primary'
             }
             setSelectedEvent({
               title: 'Novo Item',
-              source: 'mytudo',
+              source: 'calendar_click',
               start: slotInfo.start,
               end: slotInfo.end,
               allDay: isAllDay,
@@ -323,7 +329,22 @@ export default function CalendarModule() {
                 </div>
               ) : (
                 <div style={{ marginTop: '16px' }}>
-                  {selectedEvent.source === 'mytudo' ? (
+                  {selectedEvent.source === 'calendar_click' ? (
+                    <TaskForm
+                      initialTab="event"
+                      initialData={selectedEvent.originalEvent}
+                      onAddEvent={async (payload: any) => {
+                        await pushEventToGoogleCalendar(payload)
+                        setSelectedEvent(null)
+                      }}
+                      onAdd={async (title, desc, dueDate, rrule, eventId, reminders) => {
+                        const { addTask } = await import('@/app/lib/db')
+                        await addTask(title, desc, dueDate, rrule, reminders)
+                        setSelectedEvent(null)
+                      }}
+                      onCancel={() => setModalMode('view')}
+                    />
+                  ) : selectedEvent.source === 'mytudo' ? (
                     <TaskForm
                       initialTab="task"
                       initialData={selectedEvent.originalEvent}

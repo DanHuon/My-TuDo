@@ -235,7 +235,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         <select value={rruleStr} onChange={(e) => {
           if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
           else setRruleStr(e.target.value)
-        }} className={styles.titleInput} disabled={submitting} style={{ background: 'transparent' }}>
+        }} className={styles.titleInput} disabled={submitting} style={{ padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
           <option value="">Sem repetição</option>
           <option value="FREQ=DAILY">Diariamente</option>
           <option value="FREQ=WEEKLY">Semanalmente</option>
