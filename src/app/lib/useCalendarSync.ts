@@ -194,6 +194,9 @@ export function useCalendarSync(accessToken: string | undefined) {
     }
 
     if (event.rrule) eventBody.recurrence = [`RRULE:${event.rrule}`]
+    if (event.reminders && event.reminders.length > 0) {
+      eventBody.reminders = { useDefault: false, overrides: event.reminders }
+    }
 
     try {
       const url = isNew 

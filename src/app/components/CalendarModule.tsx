@@ -273,10 +273,10 @@ export default function CalendarModule() {
                   
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: '4px', color: 'var(--ink)' }}>
-                      Início: {moment(selectedEvent.start).format(selectedEvent.allDay ? 'LL' : 'LLL')}
+                      Início: {moment(selectedEvent.start).format(selectedEvent.allDay ? 'DD/MM/YYYY' : 'DD/MM/YYYY [às] HH:mm')}
                     </span>
                     <span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: '4px', color: 'var(--ink)' }}>
-                      Fim: {moment(selectedEvent.end).format(selectedEvent.allDay ? 'LL' : 'LLL')}
+                      Fim: {moment(selectedEvent.allDay ? new Date(selectedEvent.end.getTime() - 86400000) : selectedEvent.end).format(selectedEvent.allDay ? 'DD/MM/YYYY' : 'DD/MM/YYYY [às] HH:mm')}
                     </span>
                     <span style={{ fontSize: '0.75rem', background: selectedEvent.backgroundColor, padding: '4px 8px', borderRadius: '4px', color: selectedEvent.textColor || '#fff' }}>
                       Tipo: {selectedEvent.source === 'mytudo' ? 'Tarefa MyTuDo' : 'Evento Google'}

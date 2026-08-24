@@ -24,6 +24,7 @@ export interface GcEvent {
   rrule?: string | null
   backgroundColor?: string
   updatedAt: string
+  reminders?: { method: 'email' | 'popup'; minutes: number }[]
 }
 
 export interface Tag {
