@@ -256,9 +256,14 @@ export default function CalendarModule() {
                              
             const st = moment(slotInfo.start)
             
-            const endStr = (slotInfo.action === 'click' && !isAllDay) 
-              ? '' 
-              : moment(slotInfo.end).format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm')
+            let endStr = ''
+            if (slotInfo.slots.length > 1) {
+              if (isAllDay) {
+                endStr = moment(slotInfo.end).subtract(1, 'days').format('YYYY-MM-DD')
+              } else {
+                endStr = moment(slotInfo.end).format('YYYY-MM-DDTHH:mm')
+              }
+            }
 
             const newEv = {
               title: '',
