@@ -13,14 +13,24 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   const loginWithGoogle = useGoogleLogin({
+    flow: 'auth-code',
     scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
-    onSuccess: async (tokenResponse) => {
+    onSuccess: async (codeResponse) => {
       setLoading(true)
       try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        const res = await fetch('/api/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: codeResponse.code })
         })
-        const userInfo = await res.json()
+        
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to exchange token')
+
+        const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        })
+        const userInfo = await userRes.json()
         
         setSession({
           user: {
@@ -28,11 +38,14 @@ export default function LoginPage() {
             email: userInfo.email,
             picture: userInfo.picture,
           },
-          accessToken: tokenResponse.access_token,
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: Date.now() + (data.expires_in * 1000),
         })
         router.push('/')
       } catch (err) {
-        setError('Falha ao obter o perfil do usuário.')
+        console.error(err)
+        setError('Falha ao obter o perfil do usuário e validar token.')
       } finally {
         setLoading(false)
       }
