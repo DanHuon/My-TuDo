@@ -5,6 +5,7 @@ import { GcEvent, Task } from './types'
 export function useCalendarSync(accessToken: string | undefined) {
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSync, setLastSync] = useState<Date | null>(null)
+  const [calendars, setCalendars] = useState<{ id: string, summary: string, backgroundColor: string }[]>([])
 
   const fetchCalendarEvents = useCallback(async () => {
     if (!accessToken) return
@@ -17,6 +18,13 @@ export function useCalendarSync(accessToken: string | undefined) {
       })
       if (!calendarListRes.ok) throw new Error('Failed to fetch calendar list')
       const calendarList = await calendarListRes.json()
+
+      const parsedCalendars = calendarList.items.map((c: any) => ({
+        id: c.id,
+        summary: c.summary,
+        backgroundColor: c.backgroundColor || '#4285F4'
+      }))
+      setCalendars(parsedCalendars)
 
       const allEvents: GcEvent[] = []
       
@@ -240,6 +248,7 @@ export function useCalendarSync(accessToken: string | undefined) {
     pushTaskToGoogleCalendar,
     deleteTaskFromGoogleCalendar,
     pushEventToGoogleCalendar,
-    deleteEventFromGoogleCalendar
+    deleteEventFromGoogleCalendar,
+    calendars
   }
 }

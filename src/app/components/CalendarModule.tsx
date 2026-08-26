@@ -20,7 +20,7 @@ const localizer = momentLocalizer(moment)
 
 export default function CalendarModule() {
   const { session } = useAuth()
-  const { fetchCalendarEvents, isSyncing, pushEventToGoogleCalendar, deleteEventFromGoogleCalendar, deleteTaskFromGoogleCalendar } = useCalendarSync(session?.accessToken)
+  const { fetchCalendarEvents, isSyncing, pushEventToGoogleCalendar, deleteEventFromGoogleCalendar, deleteTaskFromGoogleCalendar, calendars } = useCalendarSync(session?.accessToken)
   const [currentView, setCurrentView] = useState(Views.MONTH)
   const [currentDate, setCurrentDate] = useState(new Date())
 
@@ -349,6 +349,7 @@ export default function CalendarModule() {
                         setSelectedEvent(null)
                       }}
                       onCancel={() => setModalMode('view')}
+                      calendars={calendars}
                     />
                   ) : selectedEvent.source === 'mytudo' ? (
                     <TaskForm
@@ -356,6 +357,7 @@ export default function CalendarModule() {
                       initialData={selectedEvent.originalEvent}
                       onAdd={handleEditSubmitTask}
                       onCancel={() => setModalMode('view')}
+                      calendars={calendars}
                     />
                   ) : (
                     <TaskForm
@@ -366,6 +368,7 @@ export default function CalendarModule() {
                         setSelectedEvent(null)
                       }}
                       onCancel={() => setModalMode('view')}
+                      calendars={calendars}
                     />
                   )}
                 </div>

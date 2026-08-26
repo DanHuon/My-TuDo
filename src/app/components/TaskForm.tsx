@@ -10,12 +10,13 @@ interface Props {
   onCancel?: () => void
   initialTab?: 'task' | 'event'
   initialData?: any
+  calendars?: { id: string, summary: string, backgroundColor: string }[]
 }
 
 type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks';
 interface LocalReminder { method: 'email'|'popup', value: number, unit: ReminderUnit }
 
-export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'task', initialData = null }: Props) {
+export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'task', initialData = null, calendars = [] }: Props) {
   const [tab, setTab] = useState<'task' | 'event'>(initialTab)
   const [submitting, setSubmitting] = useState(false)
 
@@ -225,7 +226,15 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
             <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Calendário (Google):</div>
             <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting}>
-              <option value="primary">Principal (My calendar)</option>
+              {calendars && calendars.length > 0 ? (
+                calendars.map(cal => (
+                  <option key={cal.id} value={cal.id} style={{ color: cal.backgroundColor, fontWeight: 'bold' }}>
+                    {cal.summary}
+                  </option>
+                ))
+              ) : (
+                <option value="primary">Principal (My calendar)</option>
+              )}
             </select>
             <div className={styles.inputLine} />
           </>

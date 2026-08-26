@@ -237,7 +237,11 @@ export default function TodoApp() {
             {(viewMode === 'tasks' || viewMode === 'events') && (
               <div className={styles.sidebarSection}>
                 <h2 className={styles.sectionLabel}>Nova Tarefa / Evento</h2>
-                <TaskForm onAdd={addTask} onAddEvent={calendarSync.pushEventToGoogleCalendar} />
+                <TaskForm 
+                  onAdd={addTask} 
+                  onAddEvent={calendarSync.pushEventToGoogleCalendar}
+                  calendars={calendarSync.calendars}
+                />
               </div>
             )}
 
