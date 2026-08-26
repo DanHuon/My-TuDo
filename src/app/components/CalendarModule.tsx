@@ -269,6 +269,7 @@ export default function CalendarModule() {
               title: '',
               start: st.format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
               end: endStr,
+              dueDate: st.format(isAllDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
               allDay: isAllDay,
               calendarId: 'primary'
             }

@@ -248,29 +248,33 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         </select>
         <div className={styles.inputLine} />
 
-        <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Lembretes (Google):</div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-          <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn}>+ Popup</button>
-          <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn}>+ E-mail</button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
-          {reminders.map((rem, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
-                <option value="popup">Popup</option>
-                <option value="email">E-mail</option>
-              </select>
-              <input type="number" min="0" value={rem.value} onChange={(e) => { const r = [...reminders]; r[idx].value = parseInt(e.target.value) || 0; setReminders(r) }} className={styles.titleInput} style={{ width: '70px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }} />
-              <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '110px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
-                <option value="minutes">Minutos</option>
-                <option value="hours">Horas</option>
-                <option value="days">Dias</option>
-                <option value="weeks">Semanas</option>
-              </select>
-              <button type="button" onClick={() => { const r = [...reminders]; r.splice(idx, 1); setReminders(r) }} style={{ background: 'none', border: 'none', color: '#EA4335', cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>×</button>
+        {(tab === 'event' || (tab === 'task' && taskDateTime)) && (
+          <>
+            <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Lembretes (Google):</div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn}>+ Popup</button>
+              <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn}>+ E-mail</button>
             </div>
-          ))}
-        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+              {reminders.map((rem, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
+                    <option value="popup">Popup</option>
+                    <option value="email">E-mail</option>
+                  </select>
+                  <input type="number" min="0" value={rem.value} onChange={(e) => { const r = [...reminders]; r[idx].value = parseInt(e.target.value) || 0; setReminders(r) }} className={styles.titleInput} style={{ width: '70px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }} />
+                  <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '110px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
+                    <option value="minutes">Minutos</option>
+                    <option value="hours">Horas</option>
+                    <option value="days">Dias</option>
+                    <option value="weeks">Semanas</option>
+                  </select>
+                  <button type="button" onClick={() => { const r = [...reminders]; r.splice(idx, 1); setReminders(r) }} style={{ background: 'none', border: 'none', color: '#EA4335', cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>×</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
