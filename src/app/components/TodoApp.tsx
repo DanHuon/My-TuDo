@@ -150,7 +150,7 @@ export default function TodoApp() {
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
       
       <div className={styles.mainWrapper}>
-        <header className={styles.header}>
+        <header className={`${styles.header} ${activeModule === 'calendar' ? styles.hideMobileCalendar : ''}`}>
           <div className={styles.headerInner}>
             <div className={styles.headerMeta}>
               {activeModule === 'tasks' && (
@@ -353,7 +353,7 @@ export default function TodoApp() {
       )}
 
       {activeModule === 'calendar' && (
-        <div className={styles.mainFull}>
+        <div className={styles.calendarFull}>
           <CalendarModule />
         </div>
       )}
@@ -376,7 +376,7 @@ export default function TodoApp() {
         </div>
       )}
 
-      <footer className={styles.footer}>
+      <footer className={`${styles.footer} ${activeModule === 'calendar' ? styles.hideMobileCalendar : ''}`}>
         <div className={styles.footerRule} />
         <div className={styles.footerInner}>
           <span>Tarefas - {new Date().getFullYear()}</span>

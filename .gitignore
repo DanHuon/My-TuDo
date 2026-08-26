@@ -23,10 +23,7 @@ dist/
 .env.production.local
 
 # Internal AI planning / Context (Excluded per user request)
-MEMORIA_IA.md
-REQUISITOS_IMPLEMENTACAO.md
-ROADMAP.md
-BROWSER_TESTING_GUIDE.md
+Controle/
 
 # Debug logs
 npm-debug.log*

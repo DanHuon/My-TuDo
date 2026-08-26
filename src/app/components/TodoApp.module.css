@@ -92,6 +92,12 @@
   flex-direction: column;
 }
 
+.calendarFull {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Tasks Sub-Sidebar ── */
 .subSidebar {
   padding: 2.5rem 2rem 2.5rem 3rem;
@@ -379,12 +385,17 @@
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .header, .footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .hideMobileCalendar { display: none !important; }
   .main {
     grid-template-columns: 1fr;
     padding: 0 1.25rem;
   }
   .mainFull {
     padding: 0 1.25rem 1.25rem 1.25rem;
+  }
+  .calendarFull {
+    padding: 0;
+    height: 100dvh;
   }
   .subSidebar {
     border-right: none;
