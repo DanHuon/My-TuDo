@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/pt-br'
@@ -31,6 +31,42 @@ export default function CalendarModule() {
     const tasks = useLiveQuery(
     () => db.items.where({ type: 'task', isDeleted: 0 }).toArray()
   )
+
+  const touchStartX = useRef<number | null>(null)
+  const touchEndX = useRef<number | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return
+    const distance = touchStartX.current - touchEndX.current
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+
+    if (isLeftSwipe || isRightSwipe) {
+      const newDate = new Date(currentDate)
+      const amount = isLeftSwipe ? 1 : -1
+
+      if (currentView === Views.MONTH) {
+        newDate.setMonth(newDate.getMonth() + amount)
+      } else if (currentView === Views.WEEK) {
+        newDate.setDate(newDate.getDate() + amount * 7)
+      } else if (currentView === Views.DAY) {
+        newDate.setDate(newDate.getDate() + amount)
+      }
+      
+      setCurrentDate(newDate)
+    }
+
+    touchStartX.current = null
+    touchEndX.current = null
+  }
 
   // Fetch Google Calendar Cache
   const gcEvents = useLiveQuery(
@@ -219,7 +255,12 @@ export default function CalendarModule() {
         </div>
       </div>
       
-      <div className={styles.calendarWrapper}>
+      <div 
+        className={styles.calendarWrapper}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <Calendar
           localizer={localizer}
           events={unifiedEvents}

@@ -103,7 +103,13 @@
 }
 
 .calendarWrapper :global(.rbc-day-bg.rbc-today) {
-  background-color: var(--bg-hover) !important;
+  background-color: var(--accent-soft) !important;
+}
+
+.calendarWrapper :global(.rbc-header.rbc-today) {
+  background-color: var(--accent) !important;
+  color: white !important;
+  border-radius: 4px;
 }
 
 .calendarWrapper :global(.rbc-off-range-bg) {
@@ -144,7 +150,7 @@
 }
 
 .calendarWrapper :global(.rbc-time-content) {
-  border-top-color: var(--border) !important;
+  border-top: none !important;
 }
 
 .calendarWrapper :global(.rbc-time-header-content) {
@@ -152,7 +158,7 @@
 }
 
 .calendarWrapper :global(.rbc-timeslot-group) {
-  border-bottom-color: var(--border) !important;
+  border-bottom: 1px solid var(--border-dark) !important;
 }
 
 .calendarWrapper :global(.rbc-time-column .rbc-timeslot-group) {
@@ -161,7 +167,7 @@
 }
 
 .calendarWrapper :global(.rbc-day-slot .rbc-time-slot) {
-  border-top-color: var(--border-dark) !important;
+  border-top: none !important;
 }
 
 .calendarWrapper :global(.rbc-agenda-view table.rbc-agenda-table) {
