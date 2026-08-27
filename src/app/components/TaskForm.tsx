@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import styles from './TaskForm.module.css'
 import { GcEvent } from '../lib/types'
 
@@ -16,6 +16,40 @@ interface Props {
 type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks';
 interface LocalReminder { method: 'email'|'popup', value: number, unit: ReminderUnit }
 
+const timeOptions: string[] = []
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    const hh = h.toString().padStart(2, '0')
+    const mm = m.toString().padStart(2, '0')
+    timeOptions.push(`${hh}:${mm}`)
+  }
+}
+
+const getDurationLabel = (start: string, end: string) => {
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  let diffMin = (eh * 60 + em) - (sh * 60 + sm)
+  if (diffMin <= 0) return '' // Do not show duration if end <= start (same or crosses midnight but for simplicity empty)
+  
+  const h = Math.floor(diffMin / 60)
+  const m = diffMin % 60
+  
+  if (h === 0 && m === 0) return '(0 min)'
+  if (h === 0) return `(${m} min)`
+  if (m === 0) return `(${h} h)`
+  return `(${h} h ${m} min)`
+}
+
+// Formats YYYY-MM-DD into string like "Sexta-feira, 28 de agosto"
+const formatDateText = (dateStr: string) => {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }
+  const formatted = date.toLocaleDateString('pt-BR', options)
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
 export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'task', initialData = null, calendars = [] }: Props) {
   const [tab, setTab] = useState<'task' | 'event'>(initialTab)
   const [submitting, setSubmitting] = useState(false)
@@ -25,21 +59,6 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
   const [description, setDescription] = useState(initialData?.description || '')
   const [rruleStr, setRruleStr] = useState(initialData?.rrule || '')
   
-  // Visual Formatting
-  const [taskInputType, setTaskInputType] = useState('text')
-  const [startInputType, setStartInputType] = useState('text')
-  const [endInputType, setEndInputType] = useState('text')
-
-  const formatForDisplay = (val: string, allDay: boolean) => {
-    if (!val) return ''
-    const parts = val.split('T')
-    const datePart = parts[0]
-    const [y, m, d] = datePart.split('-')
-    if (allDay || parts.length === 1) return `${d}/${m}/${y}`
-    const timePart = parts[1].substring(0, 5)
-    return `${d}/${m}/${y} ${timePart}`
-  }
-
   // Custom RRULE State
   const [showCustomRrule, setShowCustomRrule] = useState(false)
   const [customRruleFreq, setCustomRruleFreq] = useState('DAILY')
@@ -71,14 +90,26 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
   const [reminders, setReminders] = useState<LocalReminder[]>(initialLocalReminders)
   const titleRef = useRef<HTMLInputElement>(null)
 
-  // Task specific
-  const [taskDateTime, setTaskDateTime] = useState(initialData?.dueDate || '')
+  // -- Task specific Date/Time logic --
+  const taskHasTimeInitial = initialData?.dueDate?.includes('T') || false
+  const [taskDate, setTaskDate] = useState(initialData?.dueDate ? initialData.dueDate.split('T')[0] : '')
+  const [taskHasTime, setTaskHasTime] = useState(taskHasTimeInitial)
+  const [taskStart, setTaskStart] = useState(taskHasTimeInitial ? initialData.dueDate.split('T')[1].substring(0, 5) : '00:00')
+  const [taskHasEnd, setTaskHasEnd] = useState(false)
+  const [taskEnd, setTaskEnd] = useState(taskStart)
+  
+  const [taskDateInputType, setTaskDateInputType] = useState('text')
 
-  // Event specific
+  // -- Event specific Date/Time logic --
+  const eventHasTimeInitial = !initialData?.allDay
   const [eventAllDay, setEventAllDay] = useState(initialData ? initialData.allDay : false)
-  const [eventStart, setEventStart] = useState(initialData?.start || '')
-  const [eventEnd, setEventEnd] = useState(initialData?.end || '')
+  const [eventDate, setEventDate] = useState(initialData?.start ? initialData.start.split('T')[0] : '')
+  const [eventEndDate, setEventEndDate] = useState(initialData?.end ? initialData.end.split('T')[0] : '')
+  const [eventStart, setEventStart] = useState(initialData?.start?.includes('T') ? initialData.start.split('T')[1].substring(0, 5) : '00:00')
+  const [eventEnd, setEventEnd] = useState(initialData?.end?.includes('T') ? initialData.end.split('T')[1].substring(0, 5) : '01:00')
   const [calendarId, setCalendarId] = useState(initialData?.calendarId || 'primary')
+
+  const [eventDateInputType, setEventDateInputType] = useState('text')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,17 +127,34 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
       if (tab === 'task') {
         if (onAdd) {
-          await onAdd(title.trim(), description.trim(), taskDateTime || undefined, rruleStr || undefined, undefined, finalReminders)
+          // Construct due date for task
+          let finalDueDate = ''
+          if (taskDate) {
+            if (taskHasTime) {
+              finalDueDate = `${taskDate}T${taskStart}:00` 
+            } else {
+              finalDueDate = taskDate
+            }
+          }
+          await onAdd(title.trim(), description.trim(), finalDueDate || undefined, rruleStr || undefined, undefined, finalReminders)
         }
       } else {
         if (onAddEvent) {
+          let startStr = eventDate
+          let endStr = eventEndDate || eventDate
+          
+          if (!eventAllDay) {
+            startStr = `${eventDate}T${eventStart}:00`
+            endStr = `${eventEndDate || eventDate}T${eventEnd}:00`
+          }
+
           const payload: Partial<GcEvent> & { isNew?: boolean } = {
             id: initialData?.id,
             isNew: !initialData?.id,
             title: title.trim(),
             description: description.trim(),
-            start: eventStart,
-            end: eventEnd,
+            start: startStr,
+            end: endStr,
             allDay: eventAllDay,
             rrule: rruleStr || undefined,
             calendarId: calendarId,
@@ -121,9 +169,11 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
       } else {
         setTitle('')
         setDescription('')
-        setTaskDateTime('')
-        setEventStart('')
-        setEventEnd('')
+        setTaskDate('')
+        setTaskHasTime(false)
+        setEventDate('')
+        setEventEndDate('')
+        setEventAllDay(true)
         setRruleStr('')
         setReminders([])
         titleRef.current?.focus()
@@ -136,10 +186,10 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-        <button type="button" onClick={() => setTab('task')} className={styles.addDescBtn} style={{ fontWeight: tab === 'task' ? 'bold' : 'normal', opacity: tab === 'task' ? 1 : 0.6 }}>
+        <button type="button" onClick={() => setTab('task')} className={styles.addDescBtn} style={{ fontWeight: tab === 'task' ? 'bold' : 'normal', opacity: tab === 'task' ? 1 : 0.6, fontSize: '0.9rem', padding: '6px 16px', borderRadius: '20px', background: tab === 'task' ? 'var(--accent)' : 'transparent', color: tab === 'task' ? '#fff' : 'var(--ink)' }}>
           Tarefa
         </button>
-        <button type="button" onClick={() => setTab('event')} className={styles.addDescBtn} style={{ fontWeight: tab === 'event' ? 'bold' : 'normal', opacity: tab === 'event' ? 1 : 0.6 }}>
+        <button type="button" onClick={() => setTab('event')} className={styles.addDescBtn} style={{ fontWeight: tab === 'event' ? 'bold' : 'normal', opacity: tab === 'event' ? 1 : 0.6, fontSize: '0.9rem', padding: '6px 16px', borderRadius: '20px', background: tab === 'event' ? 'var(--accent)' : 'transparent', color: tab === 'event' ? '#fff' : 'var(--ink)' }}>
           Evento
         </button>
       </div>
@@ -155,77 +205,120 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
           maxLength={200}
           autoComplete="off"
           disabled={submitting}
+          style={{ fontSize: '1.2rem', padding: '8px 0' }}
         />
-        <div className={styles.inputLine} />
+        <div className={styles.inputLine} style={{ marginBottom: '16px' }} />
       </div>
 
       <div className={styles.descGroup}>
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="Adicione detalhes (opcional)"
-          className={styles.descInput}
-          rows={2}
-          maxLength={1000}
-          disabled={submitting}
-        />
-        <div className={styles.inputLine} />
         
-        {tab === 'task' && (
-          <>
-            <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Data e Hora (opcional):</div>
-            <input
-              type={taskInputType}
-              value={taskInputType === 'text' ? formatForDisplay(taskDateTime, false) : taskDateTime}
-              onFocus={() => setTaskInputType('datetime-local')}
-              onBlur={() => setTaskInputType('text')}
-              onChange={(e) => setTaskDateTime(e.target.value)}
-              className={styles.titleInput}
-              style={{ marginTop: '4px' }}
-              disabled={submitting}
-            />
-            <div className={styles.inputLine} />
-          </>
-        )}
+        {/* --- DATETIME SECTION --- */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>🕒</span>
+          
+          {tab === 'task' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type={taskDateInputType}
+                value={taskDateInputType === 'text' ? (taskDate ? formatDateText(taskDate) : 'Adicionar data') : taskDate}
+                onFocus={() => setTaskDateInputType('date')}
+                onBlur={() => setTaskDateInputType('text')}
+                onChange={(e) => setTaskDate(e.target.value)}
+                className={styles.titleInput}
+                style={{ width: taskDateInputType === 'text' && !taskDate ? '120px' : 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }}
+                disabled={submitting}
+              />
+
+              {!taskHasTime && taskDate && (
+                <button type="button" onClick={() => setTaskHasTime(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                  Adicionar horário
+                </button>
+              )}
+
+              {taskHasTime && (
+                <>
+                  <select value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: '80px', padding: '4px', background: 'var(--bg-card)' }}>
+                    {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+
+                  {(!taskHasEnd && taskStart === taskEnd) ? (
+                    <button type="button" onClick={() => setTaskHasEnd(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                      Adicionar horário de término
+                    </button>
+                  ) : (
+                    <>
+                      <span>-</span>
+                      <select value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: '130px', padding: '4px', background: 'var(--bg-card)' }}>
+                        {timeOptions.map(t => <option key={t} value={t}>{t} {getDurationLabel(taskStart, t)}</option>)}
+                      </select>
+                      <button type="button" onClick={() => { setTaskHasEnd(false); setTaskEnd(taskStart); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                    </>
+                  )}
+                  
+                  <button type="button" onClick={() => { setTaskHasTime(false); setTaskHasEnd(false); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
+                </>
+              )}
+            </div>
+          )}
+
+          {tab === 'event' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type={eventDateInputType}
+                value={eventDateInputType === 'text' ? (eventDate ? formatDateText(eventDate) : 'Data início') : eventDate}
+                onFocus={() => setEventDateInputType('date')}
+                onBlur={() => setEventDateInputType('text')}
+                onChange={(e) => setEventDate(e.target.value)}
+                className={styles.titleInput}
+                style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }}
+                disabled={submitting}
+                required
+              />
+
+              {eventAllDay ? (
+                <>
+                  <button type="button" onClick={() => setEventAllDay(false)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                    Adicionar horário
+                  </button>
+                </>
+              ) : (
+                <>
+                  <select value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: '80px', padding: '4px', background: 'var(--bg-card)' }}>
+                    {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <span>-</span>
+                  <select value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: '130px', padding: '4px', background: 'var(--bg-card)' }}>
+                    {timeOptions.map(t => <option key={t} value={t}>{t} {getDurationLabel(eventStart, t)}</option>)}
+                  </select>
+                  <button type="button" onClick={() => setEventAllDay(true)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+           <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>↻</span>
+           <select value={rruleStr} onChange={(e) => {
+             if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
+             else setRruleStr(e.target.value)
+           }} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'transparent', width: 'auto' }}>
+             <option value="">Não se repete</option>
+             <option value="FREQ=DAILY">Diariamente</option>
+             <option value="FREQ=WEEKLY">Semanalmente</option>
+             <option value="FREQ=MONTHLY">Mensalmente</option>
+             <option value="FREQ=YEARLY">Anualmente</option>
+             <option value="CUSTOM">Personalizar...</option>
+             {rruleStr && !['', 'FREQ=DAILY', 'FREQ=WEEKLY', 'FREQ=MONTHLY', 'FREQ=YEARLY', 'CUSTOM'].includes(rruleStr) && (
+               <option value={rruleStr}>Recorrência ativa</option>
+             )}
+           </select>
+        </div>
 
         {tab === 'event' && (
-          <>
-            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={eventAllDay} onChange={e => setEventAllDay(e.target.checked)} disabled={submitting} />
-              <span style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Dia Inteiro</span>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Início:</div>
-                <input
-                  type={startInputType}
-                  value={startInputType === 'text' ? formatForDisplay(eventStart, eventAllDay) : eventStart}
-                  onFocus={() => setStartInputType(eventAllDay ? "date" : "datetime-local")}
-                  onBlur={() => setStartInputType('text')}
-                  onChange={(e) => setEventStart(e.target.value)}
-                  className={styles.titleInput}
-                  disabled={submitting}
-                  required
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>Fim (opcional):</div>
-                <input
-                  type={endInputType}
-                  value={endInputType === 'text' ? formatForDisplay(eventEnd, eventAllDay) : eventEnd}
-                  onFocus={() => setEndInputType(eventAllDay ? "date" : "datetime-local")}
-                  onBlur={() => setEndInputType('text')}
-                  onChange={(e) => setEventEnd(e.target.value)}
-                  className={styles.titleInput}
-                  disabled={submitting}
-                />
-              </div>
-            </div>
-            <div className={styles.inputLine} />
-
-            <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Calendário (Google):</div>
-            <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>📅</span>
+            <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'transparent', width: 'auto' }}>
               {calendars && calendars.length > 0 ? (
                 calendars.map(cal => (
                   <option key={cal.id} value={cal.id} style={{ color: cal.backgroundColor, fontWeight: 'bold' }}>
@@ -236,65 +329,63 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                 <option value="primary">Principal (My calendar)</option>
               )}
             </select>
-            <div className={styles.inputLine} />
-          </>
+          </div>
         )}
 
-        <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Recorrência:</div>
-        <select value={rruleStr} onChange={(e) => {
-          if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
-          else setRruleStr(e.target.value)
-        }} className={styles.titleInput} disabled={submitting} style={{ padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
-          <option value="">Sem repetição</option>
-          <option value="FREQ=DAILY">Diariamente</option>
-          <option value="FREQ=WEEKLY">Semanalmente</option>
-          <option value="FREQ=MONTHLY">Mensalmente</option>
-          <option value="FREQ=YEARLY">Anualmente</option>
-          <option value="CUSTOM">Personalizado...</option>
-          {rruleStr && !['', 'FREQ=DAILY', 'FREQ=WEEKLY', 'FREQ=MONTHLY', 'FREQ=YEARLY', 'CUSTOM'].includes(rruleStr) && (
-            <option value={rruleStr}>Recorrência Personalizada Ativa</option>
-          )}
-        </select>
-        <div className={styles.inputLine} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+           <span style={{ fontSize: '18px', color: 'var(--ink-muted)', marginTop: '4px' }}>≡</span>
+           <textarea
+             value={description}
+             onChange={e => setDescription(e.target.value)}
+             placeholder="Adicionar descrição"
+             className={styles.descInput}
+             rows={2}
+             maxLength={1000}
+             disabled={submitting}
+             style={{ background: 'transparent', padding: '6px', width: '100%', border: 'none', resize: 'none' }}
+           />
+        </div>
 
-        {(tab === 'event' || (tab === 'task' && taskDateTime)) && (
-          <>
-            <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--ink-muted)' }}>Lembretes (Google):</div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn}>+ Popup</button>
-              <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn}>+ E-mail</button>
+        {(tab === 'event' || (tab === 'task' && taskDate)) && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>🔔</span>
+            <div style={{ width: '100%' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Adicionar notificação</button>
+                <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Adicionar e-mail</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {reminders.map((rem, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)' }}>
+                      <option value="popup">Notificação</option>
+                      <option value="email">E-mail</option>
+                    </select>
+                    <input type="number" min="0" value={rem.value} onChange={(e) => { const r = [...reminders]; r[idx].value = parseInt(e.target.value) || 0; setReminders(r) }} className={styles.titleInput} style={{ width: '60px', padding: '4px', background: 'var(--bg-card)' }} />
+                    <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)' }}>
+                      <option value="minutes">Minutos</option>
+                      <option value="hours">Horas</option>
+                      <option value="days">Dias</option>
+                      <option value="weeks">Semanas</option>
+                    </select>
+                    <button type="button" onClick={() => { const r = [...reminders]; r.splice(idx, 1); setReminders(r) }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>×</button>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
-              {reminders.map((rem, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
-                    <option value="popup">Popup</option>
-                    <option value="email">E-mail</option>
-                  </select>
-                  <input type="number" min="0" value={rem.value} onChange={(e) => { const r = [...reminders]; r[idx].value = parseInt(e.target.value) || 0; setReminders(r) }} className={styles.titleInput} style={{ width: '70px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }} />
-                  <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '110px', padding: '4px', background: 'var(--bg)', color: 'var(--ink)' }}>
-                    <option value="minutes">Minutos</option>
-                    <option value="hours">Horas</option>
-                    <option value="days">Dias</option>
-                    <option value="weeks">Semanas</option>
-                  </select>
-                  <button type="button" onClick={() => { const r = [...reminders]; r.splice(idx, 1); setReminders(r) }} style={{ background: 'none', border: 'none', color: '#EA4335', cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>×</button>
-                </div>
-              ))}
-            </div>
-          </>
+          </div>
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
-        <button type="submit" disabled={!title.trim() || submitting || (tab === 'event' && !eventStart)} className={styles.submitBtn} style={{ flex: 1 }}>
-          {submitting ? <span className={styles.submitSpinner} /> : <><span className={styles.submitIcon}>◆</span> Salvar</>}
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px', padding: '16px 0 0 0', borderTop: '1px solid var(--border)' }}>
         {onCancel && (
-          <button type="button" onClick={onCancel} className={styles.submitBtn} style={{ background: 'var(--bg-card)', color: 'var(--ink)' }}>
+          <button type="button" onClick={onCancel} className={styles.submitBtn} style={{ background: 'transparent', color: 'var(--ink)', padding: '8px 24px', border: 'none' }}>
             Cancelar
           </button>
         )}
+        <button type="submit" disabled={!title.trim() || submitting || (tab === 'event' && !eventDate)} className={styles.submitBtn} style={{ padding: '8px 24px', borderRadius: '24px', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 'bold' }}>
+          {submitting ? 'Salvando...' : 'Salvar'}
+        </button>
       </div>
 
       {showCustomRrule && (
