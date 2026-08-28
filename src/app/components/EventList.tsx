@@ -178,9 +178,9 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
-      <div style={{ padding: '0 8px' }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px', width: '100%', minWidth: 0 }}>
+      <div style={{ padding: '0 8px', maxWidth: '100%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', WebkitOverflowScrolling: 'touch' }}>
           <button 
             onClick={() => { setFilterType('todos'); setFilterCalendarId(null); setFilterVirtual(null); }} 
             style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'todos' && !filterCalendarId && !filterVirtual ? 'var(--accent)' : 'transparent', color: filterType === 'todos' && !filterCalendarId && !filterVirtual ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
