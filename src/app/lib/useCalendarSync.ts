@@ -13,7 +13,7 @@ export function useCalendarSync(accessToken: string | undefined) {
     setIsSyncing(true)
     try {
       // 1. Fetch calendar list
-      const calendarListRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+      const calendarListRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?showHidden=true', {
         headers: { Authorization: `Bearer ${accessToken}` }
       })
       if (!calendarListRes.ok) throw new Error('Failed to fetch calendar list')
@@ -21,7 +21,7 @@ export function useCalendarSync(accessToken: string | undefined) {
 
       const parsedCalendars = calendarList.items.map((c: any) => ({
         id: c.id,
-        summary: c.summary,
+        summary: c.summaryOverride || c.summary || 'Agenda',
         backgroundColor: c.backgroundColor || '#4285F4'
       }))
       setCalendars(parsedCalendars)
