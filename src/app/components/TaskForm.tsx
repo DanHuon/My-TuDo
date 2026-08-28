@@ -54,6 +54,41 @@ const formatDateText = (dateStr: string) => {
 export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'task', initialData = null, calendars = [] }: Props) {
   const [tab, setTab] = useState<'task' | 'event'>(initialTab)
   const [submitting, setSubmitting] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia("(max-width: 768px)")
+      setIsMobile(mediaQuery.matches)
+      const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+      mediaQuery.addEventListener('change', handler)
+      return () => mediaQuery.removeEventListener('change', handler)
+    }
+  }, [])
+
+  const renderTimeInput = (value: string, onChange: (val: string) => void, disabled?: boolean) => {
+    if (isMobile) {
+      return <input type="time" value={value} disabled={disabled} onChange={e => onChange(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
+    }
+    const [h, m] = value.split(':')
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'var(--bg-card)', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+        <input type="number" min="0" max="23" disabled={disabled} value={h} onChange={e => {
+          let newH = parseInt(e.target.value || '0');
+          if (newH > 23) newH = 23;
+          if (newH < 0) newH = 0;
+          onChange(`${newH.toString().padStart(2, '0')}:${m || '00'}`)
+        }} style={{ width: '40px', background: 'transparent', border: 'none', color: 'var(--ink)', textAlign: 'center', fontSize: '1rem' }} />
+        <span style={{ color: 'var(--ink-muted)' }}>:</span>
+        <input type="number" min="0" max="59" step="5" disabled={disabled} value={m} onChange={e => {
+          let newM = parseInt(e.target.value || '0');
+          if (newM > 59) newM = 59;
+          if (newM < 0) newM = 0;
+          onChange(`${h || '00'}:${newM.toString().padStart(2, '0')}`)
+        }} style={{ width: '40px', background: 'transparent', border: 'none', color: 'var(--ink)', textAlign: 'center', fontSize: '1rem' }} />
+      </div>
+    )
+  }
 
   // Shared
   const [title, setTitle] = useState(initialData?.title || '')
@@ -237,7 +272,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
               {taskHasTime && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                  <input type="time" lang="en-GB" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
+                  {renderTimeInput(taskStart, val => { setTaskStart(val); if (!taskHasEnd) setTaskEnd(val); }, submitting)}
 
                   {(!taskHasEnd && taskStart === taskEnd) ? (
                     <button type="button" onClick={() => setTaskHasEnd(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
@@ -246,7 +281,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span>-</span>
-                      <input type="time" lang="en-GB" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
+                      {renderTimeInput(taskEnd, val => setTaskEnd(val), submitting)}
                       <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(taskStart, taskEnd)}</span>
                       <button type="button" onClick={() => { setTaskHasEnd(false); setTaskEnd(taskStart); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
                     </div>
@@ -280,9 +315,9 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                  <input type="time" lang="en-GB" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
+                  {renderTimeInput(eventStart, val => setEventStart(val), submitting)}
                   <span>-</span>
-                  <input type="time" lang="en-GB" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
+                  {renderTimeInput(eventEnd, val => setEventEnd(val), submitting)}
                   <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(eventStart, eventEnd)}</span>
                   <button type="button" onClick={() => setEventAllDay(true)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
                 </div>

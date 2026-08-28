@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/app/lib/db'
 import { GcEvent } from '@/app/lib/types'
@@ -11,9 +11,13 @@ import TaskForm from './TaskForm'
 
 moment.locale('pt-br')
 
-const translateRRule = (rruleStr: string) => {
+const translateRRule = (rruleStr: any) => {
   if (!rruleStr) return ''
-  const parts = rruleStr.split(';').reduce((acc, part) => {
+  if (typeof rruleStr !== 'string') {
+    if (Array.isArray(rruleStr)) rruleStr = rruleStr.find(r => typeof r === 'string' && r.startsWith('RRULE:'))?.replace('RRULE:', '') || ''
+    if (typeof rruleStr !== 'string') return ''
+  }
+  const parts = rruleStr.split(';').reduce((acc: any, part: string) => {
     const [key, val] = part.split('=')
     acc[key] = val
     return acc
@@ -65,9 +69,13 @@ const translateRRule = (rruleStr: string) => {
   return result
 }
 
-const getNextOccurrence = (start: string, rruleStr: string) => {
+const getNextOccurrence = (start: string, rruleStr: any) => {
   try {
     let formattedRule = rruleStr
+    if (typeof formattedRule !== 'string') {
+      if (Array.isArray(formattedRule)) formattedRule = formattedRule.find(r => typeof r === 'string' && r.startsWith('RRULE:'))?.replace('RRULE:', '') || ''
+      if (typeof formattedRule !== 'string') return null
+    }
     if (!formattedRule.startsWith('RRULE:')) {
       formattedRule = `RRULE:${formattedRule}`
     }
@@ -249,7 +257,7 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--ink)' }}>
-                  {event.title}
+                  {event.title || '(Sem Título)'}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
                   {event.allDay ? 'Dia Inteiro' : startDate.format('LT')}
@@ -268,8 +276,14 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
               )}
               
               {event.rrule && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>↻</span> {translateRRule(event.rrule)}
+                <div style={{ fontSize: '0.8rem', color: '#c8442f', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>↻</span> {(() => {
+                    try {
+                      return translateRRule(event.rrule)
+                    } catch {
+                      return 'Recorrência'
+                    }
+                  })()}
                 </div>
               )}
             </div>
