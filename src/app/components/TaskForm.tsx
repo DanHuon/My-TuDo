@@ -16,15 +16,6 @@ interface Props {
 type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks';
 interface LocalReminder { method: 'email'|'popup', value: number, unit: ReminderUnit }
 
-const timeOptions: string[] = []
-for (let h = 0; h < 24; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    const hh = h.toString().padStart(2, '0')
-    const mm = m.toString().padStart(2, '0')
-    timeOptions.push(`${hh}:${mm}`)
-  }
-}
-
 const getDurationLabel = (start: string, end: string) => {
   const [sh, sm] = start.split(':').map(Number)
   const [eh, em] = end.split(':').map(Number)
@@ -237,22 +228,19 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
               {taskHasTime && (
                 <>
-                  <select value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: '80px', padding: '4px', background: 'var(--bg-card)' }}>
-                    {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <input type="time" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
 
                   {(!taskHasEnd && taskStart === taskEnd) ? (
                     <button type="button" onClick={() => setTaskHasEnd(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
                       Adicionar horário de término
                     </button>
                   ) : (
-                    <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>-</span>
-                      <select value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: '130px', padding: '4px', background: 'var(--bg-card)' }}>
-                        {timeOptions.map(t => <option key={t} value={t}>{t} {getDurationLabel(taskStart, t)}</option>)}
-                      </select>
+                      <input type="time" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                      <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(taskStart, taskEnd)}</span>
                       <button type="button" onClick={() => { setTaskHasEnd(false); setTaskEnd(taskStart); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
-                    </>
+                    </div>
                   )}
                   
                   <button type="button" onClick={() => { setTaskHasTime(false); setTaskHasEnd(false); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
@@ -283,13 +271,10 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                 </>
               ) : (
                 <>
-                  <select value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: '80px', padding: '4px', background: 'var(--bg-card)' }}>
-                    {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <input type="time" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
                   <span>-</span>
-                  <select value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: '130px', padding: '4px', background: 'var(--bg-card)' }}>
-                    {timeOptions.map(t => <option key={t} value={t}>{t} {getDurationLabel(eventStart, t)}</option>)}
-                  </select>
+                  <input type="time" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                  <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(eventStart, eventEnd)}</span>
                   <button type="button" onClick={() => setEventAllDay(true)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
                 </>
               )}
@@ -302,7 +287,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
            <select value={rruleStr} onChange={(e) => {
              if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
              else setRruleStr(e.target.value)
-           }} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'transparent', width: 'auto' }}>
+           }} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'var(--bg-card)', color: 'var(--ink)', width: 'auto', border: '1px solid var(--border)', borderRadius: '4px' }}>
              <option value="">Não se repete</option>
              <option value="FREQ=DAILY">Diariamente</option>
              <option value="FREQ=WEEKLY">Semanalmente</option>
@@ -318,7 +303,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         {tab === 'event' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>📅</span>
-            <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'transparent', width: 'auto' }}>
+            <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'var(--bg-card)', color: 'var(--ink)', width: 'auto', border: '1px solid var(--border)', borderRadius: '4px' }}>
               {calendars && calendars.length > 0 ? (
                 calendars.map(cal => (
                   <option key={cal.id} value={cal.id} style={{ color: cal.backgroundColor, fontWeight: 'bold' }}>
@@ -350,19 +335,19 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
             <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>🔔</span>
             <div style={{ width: '100%' }}>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Adicionar notificação</button>
-                <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Adicionar e-mail</button>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Notificação Pop-up</button>
+                <button type="button" onClick={() => setReminders([...reminders, { method: 'email', value: 1, unit: 'hours' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Notificação e-mail</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {reminders.map((rem, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)' }}>
+                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select value={rem.method} onChange={(e) => { const r = [...reminders]; r[idx].method = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)', color: 'var(--ink)' }}>
                       <option value="popup">Notificação</option>
                       <option value="email">E-mail</option>
                     </select>
                     <input type="number" min="0" value={rem.value} onChange={(e) => { const r = [...reminders]; r[idx].value = parseInt(e.target.value) || 0; setReminders(r) }} className={styles.titleInput} style={{ width: '60px', padding: '4px', background: 'var(--bg-card)' }} />
-                    <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)' }}>
+                    <select value={rem.unit} onChange={(e) => { const r = [...reminders]; r[idx].unit = e.target.value as any; setReminders(r) }} className={styles.titleInput} style={{ width: '100px', padding: '4px', background: 'var(--bg-card)', color: 'var(--ink)' }}>
                       <option value="minutes">Minutos</option>
                       <option value="hours">Horas</option>
                       <option value="days">Dias</option>

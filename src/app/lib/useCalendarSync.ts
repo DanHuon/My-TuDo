@@ -19,6 +19,21 @@ export function useCalendarSync(accessToken: string | undefined) {
       if (!calendarListRes.ok) throw new Error('Failed to fetch calendar list')
       const calendarList = await calendarListRes.json()
 
+      const birthdaysId = 'addressbook#contacts@group.v.calendar.google.com'
+      if (!calendarList.items.some((c: any) => c.id === birthdaysId)) {
+        try {
+          const birthdayRes = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList/${encodeURIComponent(birthdaysId)}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          })
+          if (birthdayRes.ok) {
+            const birthdayCal = await birthdayRes.json()
+            calendarList.items.push(birthdayCal)
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
       const parsedCalendars = calendarList.items.map((c: any) => ({
         id: c.id,
         summary: c.summaryOverride || c.summary || 'Agenda',
