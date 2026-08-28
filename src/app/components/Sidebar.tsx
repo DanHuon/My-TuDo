@@ -52,7 +52,7 @@ export default function Sidebar({ activeModule, onModuleChange }: SidebarProps) 
             className={`${styles.navItem} ${activeModule === 'tasks' ? styles.navItemActive : ''}`}
             onClick={() => handleNavClick('tasks')}
           >
-            ✓ Tarefas
+            ✓ Tarefas & Eventos
           </button>
           
           <button 
