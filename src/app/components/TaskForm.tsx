@@ -205,7 +205,6 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         
         {/* --- DATETIME SECTION --- */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>🕒</span>
           
           {tab === 'task' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -227,24 +226,24 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
               )}
 
               {taskHasTime && (
-                <>
-                  <input type="time" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+                  <input type="time" lang="pt-BR" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
 
                   {(!taskHasEnd && taskStart === taskEnd) ? (
                     <button type="button" onClick={() => setTaskHasEnd(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
                       Adicionar horário de término
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span>-</span>
-                      <input type="time" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                      <input type="time" lang="pt-BR" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
                       <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(taskStart, taskEnd)}</span>
                       <button type="button" onClick={() => { setTaskHasEnd(false); setTaskEnd(taskStart); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
                     </div>
                   )}
                   
                   <button type="button" onClick={() => { setTaskHasTime(false); setTaskHasEnd(false); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
-                </>
+                </div>
               )}
             </div>
           )}
@@ -270,20 +269,19 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                   </button>
                 </>
               ) : (
-                <>
-                  <input type="time" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+                  <input type="time" lang="pt-BR" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
                   <span>-</span>
-                  <input type="time" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                  <input type="time" lang="pt-BR" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
                   <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(eventStart, eventEnd)}</span>
                   <button type="button" onClick={() => setEventAllDay(true)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
-                </>
+                </div>
               )}
             </div>
           )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-           <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>↻</span>
            <select value={rruleStr} onChange={(e) => {
              if (e.target.value === 'CUSTOM') setShowCustomRrule(true)
              else setRruleStr(e.target.value)
@@ -302,7 +300,6 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
         {tab === 'event' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>📅</span>
             <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={styles.titleInput} disabled={submitting} style={{ padding: '6px', background: 'var(--bg-card)', color: 'var(--ink)', width: 'auto', border: '1px solid var(--border)', borderRadius: '4px' }}>
               {calendars && calendars.length > 0 ? (
                 calendars.map(cal => (
@@ -318,7 +315,6 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
         )}
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
-           <span style={{ fontSize: '18px', color: 'var(--ink-muted)', marginTop: '4px' }}>≡</span>
            <textarea
              value={description}
              onChange={e => setDescription(e.target.value)}
@@ -333,7 +329,6 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
         {(tab === 'event' || (tab === 'task' && taskDate)) && (
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>🔔</span>
             <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => setReminders([...reminders, { method: 'popup', value: 10, unit: 'minutes' }])} className={styles.addDescBtn} style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: '4px' }}>Notificação Pop-up</button>

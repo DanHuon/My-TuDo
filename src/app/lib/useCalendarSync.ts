@@ -13,30 +13,15 @@ export function useCalendarSync(accessToken: string | undefined) {
     setIsSyncing(true)
     try {
       // 1. Fetch calendar list
-      const calendarListRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?showHidden=true', {
+      const calendarListRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
         headers: { Authorization: `Bearer ${accessToken}` }
       })
       if (!calendarListRes.ok) throw new Error('Failed to fetch calendar list')
       const calendarList = await calendarListRes.json()
 
-      const birthdaysId = 'addressbook#contacts@group.v.calendar.google.com'
-      if (!calendarList.items.some((c: any) => c.id === birthdaysId)) {
-        try {
-          const birthdayRes = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList/${encodeURIComponent(birthdaysId)}`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-          })
-          if (birthdayRes.ok) {
-            const birthdayCal = await birthdayRes.json()
-            calendarList.items.push(birthdayCal)
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-
       const parsedCalendars = calendarList.items.map((c: any) => ({
         id: c.id,
-        summary: c.summaryOverride || c.summary || 'Agenda',
+        summary: c.summary,
         backgroundColor: c.backgroundColor || '#4285F4'
       }))
       setCalendars(parsedCalendars)
@@ -62,8 +47,9 @@ export function useCalendarSync(accessToken: string | undefined) {
           if (item.status === 'cancelled') return
 
           // Google Calendar events can have start.dateTime or start.date (for all-day)
-          const start = item.start?.dateTime || item.start?.date
-          const end = item.end?.dateTime || item.end?.date
+          // For all-day, append T12:00:00 to avoid UTC timezone shifting it to the previous day
+          const start = item.start?.dateTime || (item.start?.date ? `${item.start.date}T12:00:00` : null)
+          const end = item.end?.dateTime || (item.end?.date ? `${item.end.date}T12:00:00` : null)
           if (!start || !end) return
 
           allEvents.push({

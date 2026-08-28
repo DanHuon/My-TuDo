@@ -101,23 +101,47 @@ interface EventListProps {
 export default function EventList({ calendars = [], onAddEvent }: EventListProps) {
   const events = useLiveQuery(() => db.gc_cache.toArray()) || []
   
-  const [filterType, setFilterType] = useState<'all' | 'recurring' | 'single'>('all')
-  const [filterCalendarId, setFilterCalendarId] = useState<string>('all')
+  const [filterType, setFilterType] = useState<'todos' | 'recorrentes' | 'unicos'>('todos')
+  const [filterCalendarId, setFilterCalendarId] = useState<string | null>(null)
+  const [filterVirtual, setFilterVirtual] = useState<'aniversarios' | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<GcEvent | null>(null)
 
-  // Derive unique calendars from events if calendars prop is empty
-  const availableCalendars = calendars.length > 0 
+  const isAnniversary = (title: string) => {
+    const t = title.toLowerCase()
+    return t.includes('aniversário') || t.includes('birthday') || t.includes('parabéns')
+  }
+
+  const filteredEvents = useMemo(() => {
+    let result = events
+    if (filterType === 'recorrentes') result = result.filter(e => !!e.rrule)
+    if (filterType === 'unicos') result = result.filter(e => !e.rrule)
+    if (filterCalendarId) result = result.filter(e => e.calendarId === filterCalendarId)
+    if (filterVirtual === 'aniversarios') result = result.filter(e => isAnniversary(e.title || ''))
+    return result
+  }, [events, filterType, filterCalendarId, filterVirtual])
+
+  const availableCalendars = calendars && calendars.length > 0 
     ? calendars 
     : Array.from(new Set(events.map(e => e.calendarId))).map(id => ({ id, summary: id, backgroundColor: '#c8442f' }))
 
-  const filteredEvents = events.filter(ev => {
-    if (filterType === 'recurring' && !ev.rrule) return false
-    if (filterType === 'single' && ev.rrule) return false
-    if (filterCalendarId !== 'all' && ev.calendarId !== filterCalendarId) return false
-    return true
-  })
+  const handleFilterCalendar = (id: string) => {
+    if (filterCalendarId === id) {
+      setFilterCalendarId(null)
+    } else {
+      setFilterCalendarId(id)
+      setFilterVirtual(null)
+    }
+  }
 
-  // Sort: For recurring, sort by next occurrence. For single, sort by start date (closest future first)
+  const handleFilterVirtual = (type: 'aniversarios') => {
+    if (filterVirtual === type) {
+      setFilterVirtual(null)
+    } else {
+      setFilterVirtual(type)
+      setFilterCalendarId(null)
+    }
+  }
+
   const sortedEvents = [...filteredEvents].sort((a, b) => {
     let dateA = new Date(a.start as string)
     let dateB = new Date(b.start as string)
@@ -131,49 +155,54 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
       if (nextB) dateB = nextB
     }
     
-    // Sort upcoming events first, then past events
     const now = new Date().getTime()
     const diffA = dateA.getTime() - now
     const diffB = dateB.getTime() - now
     
     if (diffA >= 0 && diffB >= 0) return diffA - diffB
-    if (diffA < 0 && diffB < 0) return diffB - diffA // More recent past first
-    return diffA >= 0 ? -1 : 1 // Future first
+    if (diffA < 0 && diffB < 0) return diffB - diffA
+    return diffA >= 0 ? -1 : 1
   })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-        <button 
-          onClick={() => { setFilterType('all'); setFilterCalendarId('all'); }} 
-          style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'all' && filterCalendarId === 'all' ? 'var(--accent)' : 'var(--bg-card)', color: filterType === 'all' && filterCalendarId === 'all' ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem' }}
-        >
-          Todos
-        </button>
-        <button 
-          onClick={() => { setFilterType('recurring'); setFilterCalendarId('all'); }} 
-          style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'recurring' ? 'var(--accent)' : 'var(--bg-card)', color: filterType === 'recurring' ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem' }}
-        >
-          Recorrentes
-        </button>
-        <button 
-          onClick={() => { setFilterType('single'); setFilterCalendarId('all'); }} 
-          style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'single' ? 'var(--accent)' : 'var(--bg-card)', color: filterType === 'single' ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem' }}
-        >
-          Únicos
-        </button>
-
-        <div style={{ width: '1px', background: 'var(--border)', margin: '0 8px' }} />
-
-        {availableCalendars.map(cal => (
+      <div style={{ padding: '0 8px' }}>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
           <button 
-            key={cal.id}
-            onClick={() => setFilterCalendarId(cal.id)} 
-            style={{ padding: '6px 16px', borderRadius: '20px', border: `1px solid ${cal.backgroundColor}`, background: filterCalendarId === cal.id ? cal.backgroundColor : 'transparent', color: filterCalendarId === cal.id ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem' }}
+            onClick={() => { setFilterType('todos'); setFilterCalendarId(null); setFilterVirtual(null); }} 
+            style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'todos' && !filterCalendarId && !filterVirtual ? 'var(--accent)' : 'transparent', color: filterType === 'todos' && !filterCalendarId && !filterVirtual ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
           >
-            {cal.summary === 'primary' ? 'Principal' : cal.summary}
+            Todos
           </button>
-        ))}
+          <button 
+            onClick={() => { setFilterType('recorrentes'); setFilterCalendarId(null); setFilterVirtual(null); }} 
+            style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'recorrentes' ? 'var(--accent)' : 'transparent', color: filterType === 'recorrentes' ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+          >
+            Recorrentes
+          </button>
+          <button 
+            onClick={() => { setFilterType('unicos'); setFilterCalendarId(null); setFilterVirtual(null); }} 
+            style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--border)', background: filterType === 'unicos' ? 'var(--accent)' : 'transparent', color: filterType === 'unicos' ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+          >
+            Únicos
+          </button>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 8px', flexShrink: 0 }} />
+          <button 
+            onClick={() => handleFilterVirtual('aniversarios')} 
+            style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid #92e1c0', background: filterVirtual === 'aniversarios' ? '#92e1c0' : 'transparent', color: filterVirtual === 'aniversarios' ? '#000' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+          >
+            Aniversários
+          </button>
+          {availableCalendars.map(cal => (
+            <button 
+              key={cal.id}
+              onClick={() => handleFilterCalendar(cal.id)} 
+              style={{ padding: '6px 16px', borderRadius: '20px', border: `1px solid ${cal.backgroundColor}`, background: filterCalendarId === cal.id ? cal.backgroundColor : 'transparent', color: filterCalendarId === cal.id ? '#fff' : 'var(--ink)', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+            >
+              {cal.summary === 'primary' ? 'Principal' : cal.summary}
+            </button>
+          ))}
+        </div>
       </div>
 
       {sortedEvents.length === 0 ? (
