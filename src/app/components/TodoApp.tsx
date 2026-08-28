@@ -153,52 +153,10 @@ export default function TodoApp() {
 
   return (
     <div className={styles.root}>
-      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isSyncing={isSyncing} />
       
       <div className={styles.mainWrapper}>
-        <header className={`${styles.header} ${activeModule === 'calendar' ? styles.hideMobileCalendar : ''}`}>
-          <div className={styles.headerInner}>
-            <div className={styles.headerMeta}>
-              {activeModule === 'tasks' && (
-                <span className={styles.metaLabel}>
-                  {counts.active === 0 && counts.all > 0
-                    ? 'tudo feito'
-                    : `${counts.active} pendente${counts.active !== 1 ? 's' : ''}`}
-                </span>
-              )}
-              
-              {isInstallable && (
-                <button 
-                  onClick={promptInstall} 
-                  className={styles.logoutBtn}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#34A853', color: 'white' }}
-                  title="Instalar App no dispositivo"
-                >
-                  📲 Instalar App
-                </button>
-              )}
 
-              <button 
-                onClick={() => {
-                  if (!isSyncing) {
-                    setTimeout(() => sync(false), 0)
-                  }
-                }} 
-                disabled={isSyncing}
-                className={styles.logoutBtn}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                title="Sincronizar com Google Drive"
-              >
-                {isSyncing ? 'Sincronizando...' : '☁️ Sync'}
-              </button>
-              <span className={styles.userInfo}>{session?.user?.name}</span>
-              <button onClick={handleLogout} className={styles.logoutBtn}>
-                Sair
-              </button>
-            </div>
-          </div>
-          <div className={styles.headerRule} />
-        </header>
 
         {activeModule === 'tasks' && (
           <main className={styles.main}>

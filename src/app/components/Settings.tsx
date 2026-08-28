@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/lib/AuthContext'
 import { useSync } from '@/app/lib/useSync'
+import { usePWAInstall } from '@/app/lib/usePWAInstall'
 import styles from './Settings.module.css'
 
 export default function Settings() {
-  const { session } = useAuth()
+  const { session, logout } = useAuth()
   const { sync, isSyncing, lastSync } = useSync(session?.accessToken)
+  const { isInstallable, promptInstall } = usePWAInstall()
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
 
   useEffect(() => {
@@ -63,6 +65,32 @@ export default function Settings() {
               Sistema
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>👤 Minha Conta</h2>
+        
+        {isInstallable && (
+          <div className={styles.settingRow} style={{ background: 'rgba(52, 168, 83, 0.1)', border: '1px solid #34A853' }}>
+            <div className={styles.settingInfo}>
+              <span className={styles.settingLabel} style={{ color: '#34A853' }}>Instalar Aplicativo (PWA)</span>
+              <span className={styles.settingDesc}>Instale o MyTuDo no seu dispositivo para acesso rápido.</span>
+            </div>
+            <button className={styles.syncBtn} onClick={promptInstall} style={{ background: '#34A853', color: 'white', border: 'none' }}>
+              📲 Instalar
+            </button>
+          </div>
+        )}
+
+        <div className={styles.settingRow}>
+          <div className={styles.settingInfo}>
+            <span className={styles.settingLabel}>Usuário Conectado</span>
+            <span className={styles.settingDesc}>{session?.user?.name || session?.user?.email || 'Nenhum usuário logado'}</span>
+          </div>
+          <button className={styles.syncBtn} onClick={() => { logout(); window.location.href = '/auth/login'; }} style={{ borderColor: '#c8442f', color: '#c8442f' }}>
+            Sair da Conta
+          </button>
         </div>
       </section>
 
