@@ -13,21 +13,51 @@ moment.locale('pt-br')
 
 const translateRRule = (rruleStr: string) => {
   if (!rruleStr) return ''
-  if (rruleStr.includes('FREQ=DAILY')) return 'Diariamente'
-  if (rruleStr.includes('FREQ=WEEKLY')) {
-    const days = []
-    if (rruleStr.includes('MO')) days.push('Seg')
-    if (rruleStr.includes('TU')) days.push('Ter')
-    if (rruleStr.includes('WE')) days.push('Qua')
-    if (rruleStr.includes('TH')) days.push('Qui')
-    if (rruleStr.includes('FR')) days.push('Sex')
-    if (rruleStr.includes('SA')) days.push('Sáb')
-    if (rruleStr.includes('SU')) days.push('Dom')
-    return days.length > 0 ? `Semanal (${days.join(', ')})` : 'Semanalmente'
+  const parts = rruleStr.split(';').reduce((acc, part) => {
+    const [key, val] = part.split('=')
+    acc[key] = val
+    return acc
+  }, {} as Record<string, string>)
+  
+  let result = ''
+  if (parts['FREQ'] === 'DAILY') result = 'Diariamente'
+  else if (parts['FREQ'] === 'WEEKLY') {
+    if (parts['BYDAY']) {
+      const days = parts['BYDAY'].split(',').map(d => {
+        if (d === 'MO') return 'segunda-feira'
+        if (d === 'TU') return 'terça-feira'
+        if (d === 'WE') return 'quarta-feira'
+        if (d === 'TH') return 'quinta-feira'
+        if (d === 'FR') return 'sexta-feira'
+        if (d === 'SA') return 'sábado'
+        if (d === 'SU') return 'domingo'
+        return d
+      })
+      result = `Semanal: cada ${days.join(', ')}`
+    } else {
+      result = 'Semanalmente'
+    }
   }
-  if (rruleStr.includes('FREQ=MONTHLY')) return 'Mensalmente'
-  if (rruleStr.includes('FREQ=YEARLY')) return 'Anualmente'
-  return 'Recorrente'
+  else if (parts['FREQ'] === 'MONTHLY') result = 'Mensalmente'
+  else if (parts['FREQ'] === 'YEARLY') result = 'Anualmente'
+  else result = 'Recorrente'
+  
+  if (parts['UNTIL']) {
+    const until = parts['UNTIL']
+    const year = until.substring(0, 4)
+    const month = until.substring(4, 6)
+    const day = until.substring(6, 8)
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+    const formattedDate = date.toLocaleDateString('pt-BR', options)
+    
+    result += `, até ${formattedDate}`
+  } else if (parts['COUNT']) {
+    result += `, ${parts['COUNT']} vezes`
+  }
+  
+  return result
 }
 
 const getNextOccurrence = (start: string, rruleStr: string) => {

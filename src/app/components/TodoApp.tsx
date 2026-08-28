@@ -54,6 +54,12 @@ export default function TodoApp() {
     }
   }, [])
 
+  useEffect(() => {
+    if (viewMode === 'events' && calendarSync.calendars.length === 0 && session?.accessToken) {
+      calendarSync.fetchCalendarEvents()
+    }
+  }, [viewMode, calendarSync.calendars.length, session?.accessToken, calendarSync])
+
   const handleAutoTagToggle = (checked: boolean) => {
     setAutoTagEnabled(checked)
     localStorage.setItem('auto-tag-new-tasks', String(checked))
