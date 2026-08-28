@@ -43,16 +43,21 @@ const translateRRule = (rruleStr: string) => {
   else result = 'Recorrente'
   
   if (parts['UNTIL']) {
-    const until = parts['UNTIL']
-    const year = until.substring(0, 4)
-    const month = until.substring(4, 6)
-    const day = until.substring(6, 8)
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
-    const formattedDate = date.toLocaleDateString('pt-BR', options)
-    
-    result += `, até ${formattedDate}`
+    try {
+      const until = parts['UNTIL']
+      const year = until.substring(0, 4)
+      const month = until.substring(4, 6)
+      const day = until.substring(6, 8)
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      
+      if (!isNaN(date.getTime())) {
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+        const formattedDate = date.toLocaleDateString('en-GB', options)
+        result += `, até ${formattedDate}`
+      }
+    } catch (e) {
+      // ignore
+    }
   } else if (parts['COUNT']) {
     result += `, ${parts['COUNT']} vezes`
   }

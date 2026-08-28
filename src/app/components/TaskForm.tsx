@@ -17,10 +17,15 @@ type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks';
 interface LocalReminder { method: 'email'|'popup', value: number, unit: ReminderUnit }
 
 const getDurationLabel = (start: string, end: string) => {
+  if (!start || !end || typeof start !== 'string' || typeof end !== 'string') return ''
+  if (!start.includes(':') || !end.includes(':')) return ''
+  
   const [sh, sm] = start.split(':').map(Number)
   const [eh, em] = end.split(':').map(Number)
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return ''
+  
   let diffMin = (eh * 60 + em) - (sh * 60 + sm)
-  if (diffMin <= 0) return '' // Do not show duration if end <= start (same or crosses midnight but for simplicity empty)
+  if (diffMin <= 0) return '' 
   
   const h = Math.floor(diffMin / 60)
   const m = diffMin % 60
@@ -34,11 +39,16 @@ const getDurationLabel = (start: string, end: string) => {
 // Formats YYYY-MM-DD into string like "Sexta-feira, 28 de agosto"
 const formatDateText = (dateStr: string) => {
   if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }
-  const formatted = date.toLocaleDateString('pt-BR', options)
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
+    if (isNaN(date.getTime())) return dateStr
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }
+    const formatted = date.toLocaleDateString('pt-BR', options)
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+  } catch (e) {
+    return dateStr
+  }
 }
 
 export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'task', initialData = null, calendars = [] }: Props) {
@@ -227,7 +237,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
               {taskHasTime && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                  <input type="time" lang="pt-BR" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                  <input type="time" lang="en-GB" value={taskStart} onChange={e => { setTaskStart(e.target.value); if(!taskHasEnd) setTaskEnd(e.target.value); }} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
 
                   {(!taskHasEnd && taskStart === taskEnd) ? (
                     <button type="button" onClick={() => setTaskHasEnd(true)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
@@ -236,7 +246,7 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span>-</span>
-                      <input type="time" lang="pt-BR" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                      <input type="time" lang="en-GB" value={taskEnd} onChange={e => setTaskEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
                       <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(taskStart, taskEnd)}</span>
                       <button type="button" onClick={() => { setTaskHasEnd(false); setTaskEnd(taskStart); }} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
                     </div>
@@ -270,9 +280,9 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                  <input type="time" lang="pt-BR" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                  <input type="time" lang="en-GB" value={eventStart} onChange={e => setEventStart(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
                   <span>-</span>
-                  <input type="time" lang="pt-BR" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }} />
+                  <input type="time" lang="en-GB" value={eventEnd} onChange={e => setEventEnd(e.target.value)} className={styles.titleInput} style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px', colorScheme: 'dark' }} />
                   <span style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}>{getDurationLabel(eventStart, eventEnd)}</span>
                   <button type="button" onClick={() => setEventAllDay(true)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px', marginLeft: '4px' }}>×</button>
                 </div>
