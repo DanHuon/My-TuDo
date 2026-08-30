@@ -35,16 +35,29 @@ export default function CalendarModule() {
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
 
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [isSwiping, setIsSwiping] = useState(false)
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX
+    setIsSwiping(true)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX
+    const currentX = e.targetTouches[0].clientX
+    touchEndX.current = currentX
+    if (touchStartX.current !== null) {
+      setSwipeOffset(currentX - touchStartX.current)
+    }
   }
 
   const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return
+    setIsSwiping(false)
+    if (!touchStartX.current || !touchEndX.current) {
+      setSwipeOffset(0)
+      return
+    }
     const distance = touchStartX.current - touchEndX.current
     const isLeftSwipe = distance > 50
     const isRightSwipe = distance < -50
@@ -62,10 +75,47 @@ export default function CalendarModule() {
       }
       
       setCurrentDate(newDate)
+      setSlideDirection(isLeftSwipe ? 'left' : 'right')
     }
-
+    
+    setSwipeOffset(0)
     touchStartX.current = null
     touchEndX.current = null
+  }
+
+  const CustomToolbar = (toolbar: any) => {
+    const goToBack = () => toolbar.onNavigate('PREV')
+    const goToNext = () => toolbar.onNavigate('NEXT')
+    const goToCurrent = () => toolbar.onNavigate('TODAY')
+
+    return (
+      <div className={styles.customToolbar}>
+        <div className={styles.toolbarNav}>
+          <button onClick={goToCurrent} className={styles.toolbarBtn}>Hoje</button>
+          <button onClick={goToBack} className={styles.toolbarBtn}>{'<'}</button>
+          <button onClick={goToNext} className={styles.toolbarBtn}>{'>'}</button>
+        </div>
+        
+        <div className={styles.toolbarLabel}>
+          <span>{toolbar.label}</span>
+          {isSyncing && (
+            <span className={styles.syncBadgeInline}>↻ Sincronizando...</span>
+          )}
+        </div>
+
+        <div className={styles.toolbarViews}>
+          {toolbar.views.map((name: string) => (
+            <button
+              key={name}
+              className={`${styles.toolbarBtn} ${toolbar.view === name ? styles.toolbarBtnActive : ''}`}
+              onClick={() => toolbar.onView(name)}
+            >
+              {name === 'month' ? 'Mês' : name === 'week' ? 'Semana' : name === 'day' ? 'Dia' : 'Agenda'}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   // Fetch Google Calendar Cache
@@ -241,25 +291,16 @@ export default function CalendarModule() {
 
   return (
     <div className={styles.calendarContainer}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Meu Calendário</h2>
-        <div className={styles.actions}>
-          {isSyncing && <span className={styles.syncBadge}>Sincronizando...</span>}
-          <button onClick={() => {
-            if (!isSyncing) {
-              setTimeout(() => fetchCalendarEvents(), 0)
-            }
-          }} className={styles.syncBtn} disabled={isSyncing}>
-            ↻ Atualizar
-          </button>
-        </div>
-      </div>
-      
       <div 
-        className={styles.calendarWrapper}
+        className={`${styles.calendarWrapper} ${slideDirection ? styles[`slideIn_${slideDirection}`] : ''}`}
+        style={{ 
+          transform: isSwiping ? `translateX(${swipeOffset}px)` : 'translateX(0)',
+          transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onAnimationEnd={() => setSlideDirection(null)}
       >
         <Calendar
           localizer={localizer}
@@ -267,6 +308,9 @@ export default function CalendarModule() {
           startAccessor="start"
           endAccessor="end"
           style={{ height: '100%' }}
+          components={{
+            toolbar: CustomToolbar
+          }}
           views={['month', 'week', 'day', 'agenda']}
           view={currentView}
           onView={(view: any) => setCurrentView(view)}

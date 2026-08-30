@@ -13,28 +13,58 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.header {
+.customToolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.title {
+.toolbarNav {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbarBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbarBtn:hover {
+  background: var(--border);
+}
+
+.toolbarBtnActive {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.toolbarLabel {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 500;
   color: var(--ink);
-  margin: 0;
-}
-
-.actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.syncBadge {
+.toolbarViews {
+  display: flex;
+  gap: 8px;
+}
+
+.syncBadgeInline {
   font-size: 0.75rem;
   font-family: 'DM Mono', monospace;
   color: var(--accent);
@@ -42,6 +72,7 @@
   padding: 4px 8px;
   border-radius: 4px;
   animation: pulse 1.5s infinite;
+  white-space: nowrap;
 }
 
 @keyframes pulse {
@@ -75,6 +106,27 @@
   padding: 16px;
   overflow: hidden;
   box-shadow: var(--shadow);
+  /* Para permitir o swiping via transforms sem bugar overflow e z-index */
+  position: relative;
+  will-change: transform;
+}
+
+.slideIn_left {
+  animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.slideIn_right {
+  animation: slideInRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 /* Big Calendar Overrides for Dark Mode & Styling */
