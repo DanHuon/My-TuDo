@@ -24,6 +24,8 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
       try {
         setPosition(JSON.parse(savedPos))
       } catch(e){}
+    } else {
+      setPosition({ x: 16, y: window.innerHeight - 80 })
     }
   }, [])
 

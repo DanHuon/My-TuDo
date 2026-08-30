@@ -18,6 +18,64 @@ import styles from './CalendarModule.module.css'
 moment.locale('pt-br')
 const localizer = momentLocalizer(moment)
 
+const translateRRule = (rruleStr: any) => {
+  if (!rruleStr) return ''
+  if (typeof rruleStr !== 'string') {
+    if (Array.isArray(rruleStr)) rruleStr = rruleStr.find(r => typeof r === 'string' && r.startsWith('RRULE:'))?.replace('RRULE:', '') || ''
+    if (typeof rruleStr !== 'string') return ''
+  }
+  const parts = rruleStr.split(';').reduce((acc: any, part: string) => {
+    const [key, val] = part.split('=')
+    acc[key] = val
+    return acc
+  }, {} as Record<string, string>)
+  
+  let result = ''
+  if (parts['FREQ'] === 'DAILY') result = 'Diariamente'
+  else if (parts['FREQ'] === 'WEEKLY') {
+    if (parts['BYDAY']) {
+      const days = parts['BYDAY'].split(',').map(d => {
+        if (d === 'MO') return 'segunda-feira'
+        if (d === 'TU') return 'terça-feira'
+        if (d === 'WE') return 'quarta-feira'
+        if (d === 'TH') return 'quinta-feira'
+        if (d === 'FR') return 'sexta-feira'
+        if (d === 'SA') return 'sábado'
+        if (d === 'SU') return 'domingo'
+        return d
+      })
+      result = `Semanal: cada ${days.join(', ')}`
+    } else {
+      result = 'Semanalmente'
+    }
+  }
+  else if (parts['FREQ'] === 'MONTHLY') result = 'Mensalmente'
+  else if (parts['FREQ'] === 'YEARLY') result = 'Anualmente'
+  else result = 'Recorrente'
+  
+  if (parts['UNTIL']) {
+    try {
+      const until = parts['UNTIL']
+      const year = until.substring(0, 4)
+      const month = until.substring(4, 6)
+      const day = until.substring(6, 8)
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      
+      if (!isNaN(date.getTime())) {
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+        const formattedDate = date.toLocaleDateString('en-GB', options)
+        result += `, até ${formattedDate}`
+      }
+    } catch (e) {
+      // ignore
+    }
+  } else if (parts['COUNT']) {
+    result += `, ${parts['COUNT']} vezes`
+  }
+  
+  return result
+}
+
 export default function CalendarModule() {
   const { session } = useAuth()
   const { fetchCalendarEvents, isSyncing, pushEventToGoogleCalendar, deleteEventFromGoogleCalendar, deleteTaskFromGoogleCalendar, calendars } = useCalendarSync(session?.accessToken)
@@ -144,6 +202,13 @@ export default function CalendarModule() {
     }
 
     const processItem = (itemProps: any, rruleStr: string | null) => {
+      // Fix for allDay events spanning an extra day in react-big-calendar
+      let baseEnd = itemProps.end;
+      if (itemProps.allDay && baseEnd.getHours() === 0 && baseEnd.getMinutes() === 0) {
+        baseEnd = new Date(baseEnd.getTime() - 1000);
+      }
+      itemProps.end = baseEnd;
+
       if (!rruleStr) {
         events.push(itemProps)
         return
@@ -174,7 +239,11 @@ export default function CalendarModule() {
           const durMs = origEnd.getTime() - origStart.getTime()
           
           const instStart = new Date(instanceDate)
-          const instEnd = new Date(instStart.getTime() + durMs)
+          let instEnd = new Date(instStart.getTime() + durMs)
+          
+          if (itemProps.allDay && instEnd.getHours() === 0 && instEnd.getMinutes() === 0) {
+            instEnd = new Date(instEnd.getTime() - 1000)
+          }
 
           events.push({
             ...itemProps,
@@ -405,7 +474,7 @@ export default function CalendarModule() {
 
                   {selectedEvent.originalEvent.rrule && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
-                      ↻ Recorrência Ativa ({selectedEvent.originalEvent.rrule})
+                      ↻ Recorrência Ativa ({translateRRule(selectedEvent.originalEvent.rrule)})
                     </div>
                   )}
 

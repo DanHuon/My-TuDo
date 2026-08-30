@@ -146,3 +146,9 @@
     display: block;
   }
 }
+
+@media (min-width: 769px) {
+  .hamburgerBtn:not(.syncingAnimation) {
+    display: none;
+  }
+}
