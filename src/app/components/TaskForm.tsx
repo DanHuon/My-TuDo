@@ -10,7 +10,7 @@ interface Props {
   onCancel?: () => void
   initialTab?: 'task' | 'event'
   initialData?: any
-  calendars?: { id: string, summary: string, backgroundColor: string }[]
+  calendars?: { id: string, summary: string, backgroundColor: string, primary?: boolean }[]
 }
 
 type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks';
@@ -136,14 +136,25 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
   
   const [taskDateInputType, setTaskDateInputType] = useState('text')
 
-  // -- Event specific Date/Time logic --
+  const initEventEndStr = () => {
+    if (!initialData?.end) return ''
+    const endRaw = initialData.end.split('T')[0]
+    if (initialData.allDay) {
+      const [y, m, d] = endRaw.split('-').map(Number)
+      const dateObj = new Date(y, m - 1, d - 1)
+      return `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+    }
+    return endRaw
+  }
+
   const eventHasTimeInitial = !initialData?.allDay
   const [eventAllDay, setEventAllDay] = useState(initialData ? initialData.allDay : false)
   const [eventDate, setEventDate] = useState(initialData?.start ? initialData.start.split('T')[0] : '')
-  const [eventEndDate, setEventEndDate] = useState(initialData?.end ? initialData.end.split('T')[0] : '')
+  const [eventEndDate, setEventEndDate] = useState(initEventEndStr())
+  const [eventHasEndDate, setEventHasEndDate] = useState(!!initialData?.end && initEventEndStr() !== (initialData?.start ? initialData.start.split('T')[0] : ''))
   const [eventStart, setEventStart] = useState(initialData?.start?.includes('T') ? initialData.start.split('T')[1].substring(0, 5) : '00:00')
   const [eventEnd, setEventEnd] = useState(initialData?.end?.includes('T') ? initialData.end.split('T')[1].substring(0, 5) : '01:00')
-  const [calendarId, setCalendarId] = useState(initialData?.calendarId || 'primary')
+  const [calendarId, setCalendarId] = useState(initialData?.calendarId || (calendars && calendars.length > 0 ? calendars[0].id : 'primary'))
 
   const [eventDateInputType, setEventDateInputType] = useState('text')
 
@@ -177,11 +188,11 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
       } else {
         if (onAddEvent) {
           let startStr = eventDate
-          let endStr = eventEndDate || eventDate
+          let endStr = eventHasEndDate ? eventEndDate : eventDate
           
           if (!eventAllDay) {
             startStr = `${eventDate}T${eventStart}:00`
-            endStr = `${eventEndDate || eventDate}T${eventEnd}:00`
+            endStr = `${eventHasEndDate ? eventEndDate : eventDate}T${eventEnd}:00`
           }
 
           const payload: Partial<GcEvent> & { isNew?: boolean } = {
@@ -309,7 +320,26 @@ export default function TaskForm({ onAdd, onAddEvent, onCancel, initialTab = 'ta
 
               {eventAllDay ? (
                 <>
-                  <button type="button" onClick={() => setEventAllDay(false)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                  {eventHasEndDate ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>-</span>
+                      <input
+                        type="date"
+                        value={eventEndDate}
+                        onChange={(e) => setEventEndDate(e.target.value)}
+                        className={styles.titleInput}
+                        style={{ width: 'auto', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '4px' }}
+                        disabled={submitting}
+                        required
+                      />
+                      <button type="button" onClick={() => setEventHasEndDate(false)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => { setEventHasEndDate(true); setEventEndDate(eventDate); }} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                      Adicionar data de fim
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setEventAllDay(false)} className={styles.addDescBtn} style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid var(--border)', marginLeft: '8px' }}>
                     Adicionar horário
                   </button>
                 </>

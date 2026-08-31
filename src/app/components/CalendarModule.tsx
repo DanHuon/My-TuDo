@@ -203,16 +203,14 @@ export default function CalendarModule() {
 
     const processItem = (itemProps: any, rruleStr: string | null) => {
       if (itemProps.allDay) {
-        if (itemProps.source === 'gc') {
-          // react-big-calendar expects allDay events to have INCLUSIVE end dates and exactly 00:00:00 bounds.
-          // Google Calendar API provides EXCLUSIVE end dates (e.g. Aug 21 12:00 for a 1-day event on Aug 20).
-          // We subtract 1 day from the end date to make it inclusive, and zero out the times.
-          itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
-          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate() - 1, 0, 0, 0);
-        } else {
-          // MyTuDo tasks are already inclusive (start and end are the same day). Just zero out the times.
+        if (itemProps.source === 'google') {
           itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
           itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 0, 0, 0);
+        } else {
+          // MyTuDo tasks are already inclusive (start and end are the same day). Just zero out the times, but wait, if they are inclusive, we MUST add 1 day so RBC renders them correctly!
+          // But let's just make both exclusive in DB? No, MyTuDo tasks are usually 1 day tasks. Let's add 1 day to make it exclusive for RBC.
+          itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
+          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate() + 1, 0, 0, 0);
         }
       }
 

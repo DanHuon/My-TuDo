@@ -5,7 +5,7 @@ import { GcEvent, Task } from './types'
 export function useCalendarSync(accessToken: string | undefined) {
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSync, setLastSync] = useState<Date | null>(null)
-  const [calendars, setCalendars] = useState<{ id: string, summary: string, backgroundColor: string }[]>([])
+  const [calendars, setCalendars] = useState<{ id: string, summary: string, backgroundColor: string, primary?: boolean }[]>([])
 
   const fetchCalendarEvents = useCallback(async () => {
     if (!accessToken) return
@@ -22,8 +22,13 @@ export function useCalendarSync(accessToken: string | undefined) {
       const parsedCalendars = calendarList.items.map((c: any) => ({
         id: c.id,
         summary: c.summary,
-        backgroundColor: c.backgroundColor || '#4285F4'
-      }))
+        backgroundColor: c.backgroundColor || '#4285F4',
+        primary: c.primary || false
+      })).sort((a: any, b: any) => {
+        if (a.primary) return -1;
+        if (b.primary) return 1;
+        return a.summary.localeCompare(b.summary);
+      })
       setCalendars(parsedCalendars)
 
       const allEvents: GcEvent[] = []
