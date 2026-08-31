@@ -204,14 +204,15 @@ export default function CalendarModule() {
     const processItem = (itemProps: any, rruleStr: string | null) => {
       if (itemProps.allDay) {
         if (itemProps.source === 'gc') {
-          // GC allDay events are parsed as 12:00:00 of start day and 12:00:00 of NEXT day (exclusive)
+          // react-big-calendar expects allDay events to have INCLUSIVE end dates and exactly 00:00:00 bounds.
+          // Google Calendar API provides EXCLUSIVE end dates (e.g. Aug 21 12:00 for a 1-day event on Aug 20).
+          // We subtract 1 day from the end date to make it inclusive, and zero out the times.
           itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
-          const endDay = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 0, 0, 0);
-          itemProps.end = new Date(endDay.getTime() - 1000); // 23:59:59 of previous day
+          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate() - 1, 0, 0, 0);
         } else {
-          // MyTuDo allDay tasks have start and end on the SAME day at 00:00:00
+          // MyTuDo tasks are already inclusive (start and end are the same day). Just zero out the times.
           itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
-          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 23, 59, 59);
+          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 0, 0, 0);
         }
       }
 
@@ -247,8 +248,8 @@ export default function CalendarModule() {
           const instStart = new Date(instanceDate)
           let instEnd = new Date(instStart.getTime() + durMs)
           
-          // No need to manually shift instEnd anymore because origStart and origEnd were already normalized to 00:00:00 and 23:59:59
-          // meaning the duration (durMs) will correctly calculate as X days minus 1 second, resulting in instEnd falling correctly at 23:59:59 of the final day.
+          // durMs will be 24h for GC events, 0 for MyTuDo tasks.
+          // instEnd naturally falls exactly on 00:00:00 (either next day or same day)
 
           events.push({
             ...itemProps,
