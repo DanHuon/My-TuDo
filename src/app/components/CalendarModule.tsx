@@ -202,12 +202,18 @@ export default function CalendarModule() {
     }
 
     const processItem = (itemProps: any, rruleStr: string | null) => {
-      // Fix for allDay events spanning an extra day in react-big-calendar
-      let baseEnd = itemProps.end;
-      if (itemProps.allDay && baseEnd.getHours() === 0 && baseEnd.getMinutes() === 0) {
-        baseEnd = new Date(baseEnd.getTime() - 1000);
+      if (itemProps.allDay) {
+        if (itemProps.source === 'gc') {
+          // GC allDay events are parsed as 12:00:00 of start day and 12:00:00 of NEXT day (exclusive)
+          itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
+          const endDay = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 0, 0, 0);
+          itemProps.end = new Date(endDay.getTime() - 1000); // 23:59:59 of previous day
+        } else {
+          // MyTuDo allDay tasks have start and end on the SAME day at 00:00:00
+          itemProps.start = new Date(itemProps.start.getFullYear(), itemProps.start.getMonth(), itemProps.start.getDate(), 0, 0, 0);
+          itemProps.end = new Date(itemProps.end.getFullYear(), itemProps.end.getMonth(), itemProps.end.getDate(), 23, 59, 59);
+        }
       }
-      itemProps.end = baseEnd;
 
       if (!rruleStr) {
         events.push(itemProps)
@@ -241,9 +247,8 @@ export default function CalendarModule() {
           const instStart = new Date(instanceDate)
           let instEnd = new Date(instStart.getTime() + durMs)
           
-          if (itemProps.allDay && instEnd.getHours() === 0 && instEnd.getMinutes() === 0) {
-            instEnd = new Date(instEnd.getTime() - 1000)
-          }
+          // No need to manually shift instEnd anymore because origStart and origEnd were already normalized to 00:00:00 and 23:59:59
+          // meaning the duration (durMs) will correctly calculate as X days minus 1 second, resulting in instEnd falling correctly at 23:59:59 of the final day.
 
           events.push({
             ...itemProps,
