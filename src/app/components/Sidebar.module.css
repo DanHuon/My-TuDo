@@ -119,7 +119,6 @@
 .syncingAnimation {
   animation: spin-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   color: #34A853;
-  pointer-events: none;
 }
 
 .overlay {

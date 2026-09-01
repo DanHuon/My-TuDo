@@ -43,7 +43,7 @@ export default function MemoryForm({ onClose, onAdded, initialContent = '', init
     <>
       <div className={styles.modalOverlay} onClick={onClose}>
         <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
             <div className={styles.formHeader}>
               <input 
                 className={styles.input} 

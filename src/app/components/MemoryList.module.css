@@ -344,3 +344,21 @@
 .deleteBtn:hover {
   color: var(--accent);
 }
+
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 0;
+  }
+  .modalContent {
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+    width: 100vw;
+    border: none;
+    padding: 1rem;
+  }
+  .textarea {
+    flex: 1;
+    min-height: auto;
+  }
+}
