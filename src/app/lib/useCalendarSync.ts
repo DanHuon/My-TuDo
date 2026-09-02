@@ -67,7 +67,8 @@ export function useCalendarSync(accessToken: string | undefined) {
             allDay: !!item.start?.date,
             rrule: item.recurrence ? item.recurrence.find((r: string) => r.startsWith('RRULE:'))?.replace('RRULE:', '') : null,
             backgroundColor: calendar.backgroundColor || '#4285F4',
-            updatedAt: item.updated || new Date().toISOString()
+            updatedAt: item.updated || new Date().toISOString(),
+            reminders: item.reminders?.overrides ? item.reminders.overrides.map((r: any) => ({ method: r.method, minutes: r.minutes })) : undefined
           })
         })
       }

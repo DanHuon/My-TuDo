@@ -109,15 +109,17 @@ const getNextOccurrence = (start: string, rruleStr: any) => {
 interface EventListProps {
   calendars?: { id: string, summary: string, backgroundColor: string }[]
   onAddEvent?: (payload: Partial<GcEvent> & { isNew?: boolean }) => Promise<any>
+  onDeleteEvent?: (eventId: string, calendarId: string) => Promise<void>
 }
 
-export default function EventList({ calendars = [], onAddEvent }: EventListProps) {
+export default function EventList({ calendars = [], onAddEvent, onDeleteEvent }: EventListProps) {
   const events = useLiveQuery(() => db.gc_cache.toArray()) || []
   
   const [filterType, setFilterType] = useState<'todos' | 'recorrentes' | 'unicos'>('todos')
   const [filterCalendarId, setFilterCalendarId] = useState<string | null>(null)
   const [filterVirtual, setFilterVirtual] = useState<'aniversarios' | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<GcEvent | null>(null)
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view')
 
   const isAnniversary = (title: string) => {
     const t = title.toLowerCase()
@@ -127,7 +129,7 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
   const filteredEvents = useMemo(() => {
     let result = events
     if (filterType === 'recorrentes') result = result.filter(e => !!e.rrule)
-    if (filterType === 'unicos') result = result.filter(e => !e.rrule)
+    if (filterType === 'unicos') result = result.filter(e => !e.rrule && !(e.calendarId && e.calendarId.includes('holiday')) && !isAnniversary(e.title || ''))
     if (filterCalendarId) result = result.filter(e => e.calendarId === filterCalendarId)
     if (filterVirtual === 'aniversarios') result = result.filter(e => isAnniversary(e.title || ''))
     return result
@@ -241,7 +243,7 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
           return (
             <div 
               key={event.id}
-              onClick={() => setSelectedEvent(event)}
+              onClick={() => { setSelectedEvent(event); setModalMode('view'); }}
               style={{ 
                 padding: '16px', 
                 borderRadius: '8px', 
@@ -293,18 +295,96 @@ export default function EventList({ calendars = [], onAddEvent }: EventListProps
 
       {selectedEvent && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }} onClick={() => setSelectedEvent(null)}>
-          <div style={{ background: 'var(--bg)', borderRadius: '12px', width: '100%', maxWidth: '600px', padding: '24px', boxShadow: 'var(--shadow-hover)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.8rem', color: 'var(--ink)', marginBottom: '16px' }}>Editar Evento</h3>
-            <TaskForm
-              initialTab="event"
-              initialData={selectedEvent}
-              onAddEvent={async (payload) => {
-                if (onAddEvent) await onAddEvent(payload)
-                setSelectedEvent(null)
-              }}
-              onCancel={() => setSelectedEvent(null)}
-              calendars={calendars}
-            />
+          <div style={{ background: 'var(--bg-card)', borderRadius: '12px', width: '100%', maxWidth: '600px', padding: '24px', boxShadow: 'var(--shadow-hover)', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <h3 style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.8rem', color: 'var(--ink)' }}>
+                {modalMode === 'view' ? selectedEvent.title : 'Editar Evento'}
+              </h3>
+              <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+            </div>
+            
+            {modalMode === 'view' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {selectedEvent.description && (
+                  <div style={{ background: 'var(--bg-hover)', padding: '10px', borderRadius: '8px' }}>
+                    <p style={{ color: 'var(--ink)', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{selectedEvent.description}</p>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: '4px', color: 'var(--ink)' }}>
+                    Início: {moment(selectedEvent.start).format(selectedEvent.allDay ? 'DD/MM/YYYY' : 'DD/MM/YYYY [às] HH:mm')}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: '4px', color: 'var(--ink)' }}>
+                    Fim: {moment(selectedEvent.allDay ? new Date(new Date(selectedEvent.end).getTime() - 86400000) : selectedEvent.end).format(selectedEvent.allDay ? 'DD/MM/YYYY' : 'DD/MM/YYYY [às] HH:mm')}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', background: selectedEvent.backgroundColor || 'var(--accent)', padding: '4px 8px', borderRadius: '4px', color: '#fff' }}>
+                    Tipo: Evento Google
+                  </span>
+                </div>
+
+                {selectedEvent.rrule && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                    ↻ Recorrência Ativa ({(() => {
+                      try {
+                        const { translateRRule } = require('./CalendarModule')
+                        // Wait, translateRRule is defined in CalendarModule, I should just recreate a simple one or use includes.
+                        if (selectedEvent.rrule.includes('YEARLY')) return 'Anualmente'
+                        if (selectedEvent.rrule.includes('MONTHLY')) return 'Mensalmente'
+                        if (selectedEvent.rrule.includes('WEEKLY')) return 'Semanalmente'
+                        return 'Diariamente'
+                      } catch {
+                        return 'Recorrência'
+                      }
+                    })()})
+                  </div>
+                )}
+
+                {selectedEvent.reminders && selectedEvent.reminders.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--ink)' }}>Notificações:</span>
+                    {selectedEvent.reminders.map((r: any, idx: number) => {
+                      let label = `${r.minutes} minutos antes`;
+                      if (r.minutes % 10080 === 0) label = `${r.minutes / 10080} semanas antes`;
+                      else if (r.minutes % 1440 === 0) label = `${r.minutes / 1440} dias antes`;
+                      else if (r.minutes % 60 === 0) label = `${r.minutes / 60} horas antes`;
+                      return (
+                        <span key={idx} style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                          🔔 {r.method === 'email' ? 'E-mail' : 'Pop-up'} - {label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button onClick={() => setModalMode('edit')} style={{ flex: 1, padding: '8px 16px', borderRadius: '4px', background: 'transparent', color: 'var(--ink)', border: '1px solid var(--border)', cursor: 'pointer' }}>
+                    Editar
+                  </button>
+                  {onDeleteEvent && (
+                    <button onClick={async () => {
+                      if (confirm('Deseja realmente apagar este evento?')) {
+                        await onDeleteEvent(selectedEvent.id, selectedEvent.calendarId)
+                        setSelectedEvent(null)
+                      }
+                    }} style={{ flex: 1, padding: '8px 16px', borderRadius: '4px', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                      Apagar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <TaskForm
+                initialTab="event"
+                initialData={selectedEvent}
+                onAddEvent={async (payload) => {
+                  if (onAddEvent) await onAddEvent(payload)
+                  setSelectedEvent(null)
+                }}
+                onCancel={() => setSelectedEvent(null)}
+                calendars={calendars}
+              />
+            )}
           </div>
         </div>
       )}

@@ -271,7 +271,7 @@ export default function TodoApp() {
 
         <section className={styles.content}>
           {viewMode === 'events' ? (
-            <EventList calendars={calendarSync.calendars} onAddEvent={calendarSync.pushEventToGoogleCalendar} />
+            <EventList calendars={calendarSync.calendars} onAddEvent={calendarSync.pushEventToGoogleCalendar} onDeleteEvent={calendarSync.deleteEventFromGoogleCalendar} />
           ) : viewMode === 'tags' ? (
             <TagList tags={tags} onEdit={editTag} onDelete={deleteTag} />
           ) : viewMode === 'kanban-temporal' ? (

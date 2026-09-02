@@ -482,6 +482,23 @@ export default function CalendarModule() {
                     </div>
                   )}
 
+                  {selectedEvent.originalEvent.reminders && selectedEvent.originalEvent.reminders.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--ink)' }}>Notificações:</span>
+                      {selectedEvent.originalEvent.reminders.map((r: any, idx: number) => {
+                        let label = `${r.minutes} minutos antes`;
+                        if (r.minutes % 10080 === 0) label = `${r.minutes / 10080} semanas antes`;
+                        else if (r.minutes % 1440 === 0) label = `${r.minutes / 1440} dias antes`;
+                        else if (r.minutes % 60 === 0) label = `${r.minutes / 60} horas antes`;
+                        return (
+                          <span key={idx} style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                            🔔 {r.method === 'email' ? 'E-mail' : 'Pop-up'} - {label}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
                     <button onClick={() => setModalMode('edit')} className={styles.syncBtn} style={{ flex: 1, justifyContent: 'center' }}>
                       Editar
