@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { Task, Tag } from './types';
+import { Task, Tag, StudyNote } from './types';
 
 export interface DBItem {
   id: string;
@@ -334,7 +334,53 @@ export const deleteMemory = async (id: string) => {
   await softDeleteItem(id)
 }
 
-// --- Entertainment Specific CRUD ---
+// --- Study Notes Specific CRUD ---
+
+export const itemToStudyNote = (item: BaseItem): StudyNote => {
+  return {
+    id: item.id,
+    title: item.payload.title || '',
+    content: item.payload.content || '',
+    subject: item.payload.subject || undefined,
+    tags: item.payload.tags || [],
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt
+  };
+};
+
+export const getStudyNotes = async (): Promise<StudyNote[]> => {
+  const items = await db.items.where({ type: 'studynote', isDeleted: 0 }).toArray();
+  return items.map(itemToStudyNote).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+};
+
+export const addStudyNote = async (title: string, content: string, subject?: string, tags: Tag[] = []) => {
+  await addItem('studynote', 'active', {
+    title,
+    content,
+    subject,
+    tags
+  });
+};
+
+export const editStudyNote = async (id: string, title: string, content: string, subject?: string, tags: Tag[] = []) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+
+  await db.items.update(id, {
+    updatedAt: new Date().toISOString(),
+    payload: {
+      ...item.payload,
+      title,
+      content,
+      subject,
+      tags
+    }
+  });
+};
+
+export const deleteStudyNote = async (id: string) => {
+  await softDelete(id);
+};
 
 export const itemToEntertainment = (item: DBItem): import('./types').Entertainment => {
   return {

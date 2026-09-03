@@ -23,6 +23,7 @@ import Settings from './Settings'
 import MemoryList from './MemoryList'
 import EntertainmentList from './EntertainmentList'
 import CalendarModule from './CalendarModule'
+import StudyModule from './StudyModule'
 import styles from './TodoApp.module.css'
 
 import { useCalendarSync } from '@/app/lib/useCalendarSync'
@@ -328,12 +329,7 @@ export default function TodoApp() {
 
       {activeModule === 'studies' && (
         <div className={styles.mainFull}>
-          <h1 style={{ marginTop: '2rem', fontFamily: 'Cormorant Garamond', fontSize: '2.5rem', color: 'var(--ink)' }}>
-            Em breve...
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', marginTop: '1rem' }}>
-            Este módulo está em desenvolvimento e estará disponível na próxima atualização.
-          </p>
+          <StudyModule />
         </div>
       )}
 
