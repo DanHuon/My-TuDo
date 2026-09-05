@@ -66,6 +66,7 @@ export default function StudyModule() {
         <StudyNoteEditor 
           note={selectedNote} 
           onClose={closeEditor} 
+          initialMode={isCreating ? 'edit' : 'view'}
         />
       )}
     </div>
