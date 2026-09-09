@@ -116,16 +116,12 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
             <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Tabela</button>
             <button onClick={setLinkOrImage}>🖼️ Imagem</button>
 
-            {editor?.isActive('table') && (
-              <>
-                <div className={styles.divider} />
-                <button onClick={() => editor.chain().focus().addRowAfter().run()}>+ Linha</button>
-                <button onClick={() => editor.chain().focus().deleteRow().run()}>- Linha</button>
-                <button onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Col</button>
-                <button onClick={() => editor.chain().focus().deleteColumn().run()}>- Col</button>
-                <button onClick={() => editor.chain().focus().deleteTable().run()} style={{ color: 'var(--red)' }}>Apagar Tabela</button>
-              </>
-            )}
+            <div className={styles.divider} />
+            <button onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.isActive('table')}>+ Linha</button>
+            <button onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.isActive('table')}>- Linha</button>
+            <button onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.isActive('table')}>+ Col</button>
+            <button onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.isActive('table')}>- Col</button>
+            <button onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.isActive('table')} style={{ color: editor?.isActive('table') ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
           </div>
         )}
 
