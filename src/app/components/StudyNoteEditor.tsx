@@ -125,7 +125,14 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
           </div>
         )}
 
-        <div className={styles.editorContainer} onClick={() => { if (isEditing && editor) editor.commands.focus('end') }}>
+        <div className={styles.editorContainer} onClick={(e) => { 
+          // Apenas foca no final se o clique for exatemente no container ou no wrapper
+          // (evita que cliques dentro da tabela ou no texto roubem o foco)
+          const target = e.target as HTMLElement;
+          if (isEditing && editor && (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper))) {
+            editor.commands.focus('end');
+          }
+        }}>
           <EditorContent editor={editor} className={styles.editorContentWrapper} />
         </div>
 
