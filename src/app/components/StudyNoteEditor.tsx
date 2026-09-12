@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Image } from '@tiptap/extension-image';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
@@ -9,6 +8,9 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { StudyNote } from '@/app/lib/types';
 import { addStudyNote, editStudyNote } from '@/app/lib/db';
 import styles from './StudyNoteEditor.module.css';
+import { useAuth } from '@/app/lib/AuthContext';
+import { useGooglePicker } from '@/app/hooks/useGooglePicker';
+import { DriveImageExtension } from './tiptap/DriveImageExtension';
 
 interface Props {
   note: StudyNote | null;
@@ -20,11 +22,12 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
   const [title, setTitle] = useState(note?.title || '');
   const [subject, setSubject] = useState(note?.subject || '');
   const [isEditing, setIsEditing] = useState(initialMode === 'edit');
+  const { session } = useAuth();
 
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image,
+      DriveImageExtension,
       Table.configure({
         resizable: true,
       }),
@@ -39,6 +42,15 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
         class: styles.tiptapEditor,
       },
     },
+  });
+
+  const { openPicker } = useGooglePicker({
+    accessToken: session?.accessToken,
+    onPick: (file) => {
+      if (editor) {
+        editor.chain().focus().setDriveImage({ driveId: file.id, url: file.url }).run();
+      }
+    }
   });
 
   useEffect(() => {
@@ -67,12 +79,10 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
     onClose();
   };
 
-  const setLinkOrImage = () => {
-    const url = window.prompt('URL da Imagem:');
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+  const handleInsertImage = () => {
+    openPicker();
   };
+
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -114,7 +124,7 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
             <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={editor?.isActive('orderedList') ? styles.active : ''}>1. Lista</button>
             <div className={styles.divider} />
             <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Tabela</button>
-            <button onClick={setLinkOrImage}>🖼️ Imagem</button>
+            <button onClick={handleInsertImage}>🖼️ Imagem</button>
 
             <div className={styles.divider} />
             <button onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.can().addRowAfter()}>+ Linha</button>

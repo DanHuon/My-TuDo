@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   const loginWithGoogle = useGoogleLogin({
     flow: 'auth-code',
-    scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+    scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.readonly',
     onSuccess: async (codeResponse) => {
       setLoading(true)
       try {
