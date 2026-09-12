@@ -81,11 +81,21 @@ export interface Entertainment {
   updatedAt: string
 }
 
+export interface Subject {
+  id: string
+  name: string
+  color: string
+  driveFolderId?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface StudyNote {
   id: string
   title: string
   content: string // JSON or HTML from TipTap
-  subject?: string // Discipline or Subject (e.g. "Math", "React")
+  subjectId: string // Reference to Subject
+  topic: string // e.g. "Semana 1"
   tags?: Tag[]
   createdAt: string
   updatedAt: string

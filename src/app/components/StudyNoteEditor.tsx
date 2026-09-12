@@ -16,11 +16,12 @@ interface Props {
   note: StudyNote | null;
   onClose: () => void;
   initialMode?: 'view' | 'edit';
+  subjectId: string;
 }
 
-export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }: Props) {
+export default function StudyNoteEditor({ note, onClose, initialMode = 'edit', subjectId }: Props) {
   const [title, setTitle] = useState(note?.title || '');
-  const [subject, setSubject] = useState(note?.subject || '');
+  const [topic, setTopic] = useState(note?.topic || '');
   const [isEditing, setIsEditing] = useState(initialMode === 'edit');
   const { session } = useAuth();
 
@@ -67,14 +68,27 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
     }
   }, [note, editor]);
 
+  // Listener for inject-drive-image from SubjectDashboard
+  useEffect(() => {
+    const handleInject = (e: CustomEvent) => {
+      if (editor && isEditing) {
+        editor.chain().focus().setDriveImage({ driveId: e.detail.id, url: '' }).run();
+      }
+    };
+    window.addEventListener('inject-drive-image', handleInject as EventListener);
+    return () => {
+      window.removeEventListener('inject-drive-image', handleInject as EventListener);
+    };
+  }, [editor, isEditing]);
+
   const handleSave = async () => {
     if (!editor) return;
     const content = editor.getHTML();
     
     if (note) {
-      await editStudyNote(note.id, title, content, subject, note.tags);
+      await editStudyNote(note.id, title, content, subjectId, topic, note.tags);
     } else {
-      await addStudyNote(title, content, subject, []);
+      await addStudyNote(title, content, subjectId, topic, []);
     }
     onClose();
   };
@@ -101,15 +115,18 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
           )}
           <button className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
-        
-        <input 
-          type="text" 
-          placeholder="Matéria / Assunto (Ex: React, UX Design)" 
-          value={subject} 
-          onChange={(e) => setSubject(e.target.value)}
-          className={styles.subjectInput}
-          readOnly={!isEditing}
-        />
+
+        {isEditing && (
+          <div className={styles.toolbarRow}>
+            <input 
+              type="text" 
+              placeholder="Assunto (ex: Semana 1, Anatomia)" 
+              value={topic} 
+              onChange={(e) => setTopic(e.target.value)}
+              className={styles.subjectInput}
+            />
+          </div>
+        )}
 
         {isEditing && (
           <div className={styles.toolbar}>

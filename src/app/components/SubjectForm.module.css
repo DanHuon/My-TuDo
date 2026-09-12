@@ -1,0 +1,172 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* Must be lower than google picker */
+  padding: 1rem;
+}
+
+.modalContent {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: var(--ink);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field label {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.field input[type="text"] {
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.field input[type="text"]:focus {
+  outline: 2px solid var(--accent);
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.colorPicker {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.colorBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.colorBtn:hover {
+  transform: scale(1.1);
+}
+
+.selectedColor {
+  border-color: var(--ink);
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--ink);
+}
+
+.driveRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pickerBtn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: inherit;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.pickerBtn:hover {
+  background: var(--border);
+}
+
+.folderName {
+  font-size: 0.9rem;
+  color: var(--success);
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clearBtn {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.clearBtn:hover {
+  color: var(--red);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.cancelBtn:hover {
+  background: var(--bg);
+}
+
+.saveBtn {
+  background: var(--accent);
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.saveBtn:hover {
+  filter: brightness(1.1);
+}

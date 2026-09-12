@@ -40,22 +40,34 @@
   gap: 1.5rem;
 }
 
-.noteCard {
+.subjectCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  height: 200px;
+  overflow: hidden;
+  height: 180px;
+  position: relative;
 }
 
-.noteCard:hover {
+.subjectCard:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
+}
+
+.colorStrip {
+  height: 8px;
+  width: 100%;
+}
+
+.cardContent {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .cardHeader {
@@ -64,9 +76,9 @@
   align-items: flex-start;
 }
 
-.noteTitle {
+.subjectTitle {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   color: var(--ink);
   margin: 0;
   display: -webkit-box;
@@ -78,24 +90,28 @@
 .deleteBtn {
   background: transparent;
   border: none;
-  color: var(--ink-muted);
-  font-size: 1.2rem;
+  color: var(--ink-faint);
+  font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
   padding: 0 4px;
 }
 
 .deleteBtn:hover {
-  color: var(--accent);
+  color: var(--red);
 }
 
-.subjectBadge {
-  background: var(--bg-hover);
+.metaInfo {
+  margin-top: auto;
+  font-size: 0.85rem;
   color: var(--ink-muted);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-family: 'DM Mono', monospace;
-  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.driveIcon {
+  font-size: 1rem;
 }
 
 .preview {

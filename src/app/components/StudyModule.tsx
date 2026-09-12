@@ -1,72 +1,75 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, addStudyNote, deleteStudyNote, getStudyNotes } from '@/app/lib/db';
-import { StudyNote } from '@/app/lib/types';
-import StudyNoteEditor from './StudyNoteEditor';
+import { db, deleteSubject, getSubjects } from '@/app/lib/db';
+import { Subject } from '@/app/lib/types';
+import SubjectForm from './SubjectForm';
+import SubjectDashboard from './SubjectDashboard';
 import styles from './StudyModule.module.css';
 
 export default function StudyModule() {
-  const notes = useLiveQuery(() => getStudyNotes()) || [];
-  const [selectedNote, setSelectedNote] = useState<StudyNote | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const subjects = useLiveQuery(() => getSubjects()) || [];
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
-  const handleCreateNew = async () => {
-    setIsCreating(true);
-    setSelectedNote(null);
+  const handleCreateNew = () => {
+    setEditingSubject(null);
+    setIsFormOpen(true);
   };
 
-  const handleEdit = (note: StudyNote) => {
-    setSelectedNote(note);
-    setIsCreating(false);
+  const handleEdit = (e: React.MouseEvent, subject: Subject) => {
+    e.stopPropagation();
+    setEditingSubject(subject);
+    setIsFormOpen(true);
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Deseja realmente apagar esta nota?')) {
-      await deleteStudyNote(id);
-      if (selectedNote?.id === id) {
-        setSelectedNote(null);
-      }
+    if (confirm('Deseja realmente apagar esta Matéria e desvincular as anotações?')) {
+      await deleteSubject(id);
     }
   };
 
-  const closeEditor = () => {
-    setSelectedNote(null);
-    setIsCreating(false);
-  };
+  if (selectedSubject) {
+    return <SubjectDashboard subject={selectedSubject} onBack={() => setSelectedSubject(null)} />;
+  }
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h2 className={styles.title}>📚 Cadernos & Estudos</h2>
-        <button onClick={handleCreateNew} className={styles.addBtn}>+ Nova Nota</button>
+        <h2 className={styles.title}>📚 Faculdade & Estudos</h2>
+        <button onClick={handleCreateNew} className={styles.addBtn}>+ Nova Matéria</button>
       </header>
 
       <div className={styles.grid}>
-        {notes.length === 0 && !isCreating && !selectedNote && (
-          <div className={styles.emptyState}>Nenhuma nota encontrada. Crie a sua primeira nota!</div>
+        {subjects.length === 0 && (
+          <div className={styles.emptyState}>Nenhuma matéria encontrada. Crie sua primeira matéria!</div>
         )}
         
-        {!isCreating && !selectedNote && notes.map(note => (
-          <div key={note.id} className={styles.noteCard} onClick={() => handleEdit(note)}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.noteTitle}>{note.title || 'Sem título'}</h3>
-              <button onClick={(e) => handleDelete(note.id, e)} className={styles.deleteBtn}>×</button>
-            </div>
-            {note.subject && <span className={styles.subjectBadge}>{note.subject}</span>}
-            <div className={styles.preview} dangerouslySetInnerHTML={{ __html: note.content.substring(0, 150) + (note.content.length > 150 ? '...' : '') }} />
-            <div className={styles.date}>
-              {new Date(note.updatedAt).toLocaleDateString()}
+        {subjects.map(subject => (
+          <div key={subject.id} className={styles.subjectCard} onClick={() => setSelectedSubject(subject)}>
+            <div className={styles.colorStrip} style={{ backgroundColor: subject.color }} />
+            <div className={styles.cardContent}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.subjectTitle}>{subject.name}</h3>
+                <div>
+                  <button onClick={(e) => handleEdit(e, subject)} className={styles.deleteBtn} style={{ fontSize: '1rem', marginRight: '5px' }}>✏️</button>
+                  <button onClick={(e) => handleDelete(subject.id, e)} className={styles.deleteBtn}>×</button>
+                </div>
+              </div>
+              <div className={styles.metaInfo}>
+                {subject.driveFolderId && <span className={styles.driveIcon}>📁 Pasta Vinculada</span>}
+                {!subject.driveFolderId && <span style={{ opacity: 0.5 }}>Sem pasta</span>}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {(isCreating || selectedNote) && (
-        <StudyNoteEditor 
-          note={selectedNote} 
-          onClose={closeEditor} 
-          initialMode={isCreating ? 'edit' : 'view'}
+      {isFormOpen && (
+        <SubjectForm 
+          subject={editingSubject} 
+          onClose={() => setIsFormOpen(false)} 
         />
       )}
     </div>

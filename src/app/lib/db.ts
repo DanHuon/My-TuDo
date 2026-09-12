@@ -102,6 +102,51 @@ export const softDeleteItem = async (id: string) => {
   });
 };
 
+// --- Subject CRUD ---
+
+export const itemToSubject = (item: DBItem): import('./types').Subject => {
+  return {
+    id: item.id,
+    name: item.payload.name || '',
+    color: item.payload.color || '#c8442f',
+    driveFolderId: item.payload.driveFolderId || undefined,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+};
+
+export const getSubjects = async (): Promise<import('./types').Subject[]> => {
+  const items = await db.items.where({ type: 'subject', isDeleted: 0 }).toArray();
+  return items.map(itemToSubject).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+export const addSubject = async (name: string, color: string, driveFolderId?: string) => {
+  return await addItem('subject', 'active', {
+    name,
+    color,
+    driveFolderId,
+  });
+};
+
+export const editSubject = async (id: string, name: string, color: string, driveFolderId?: string) => {
+  const item = await db.items.get(id);
+  if (!item) return;
+  const now = new Date().toISOString();
+  await db.items.update(id, {
+    updatedAt: now,
+    payload: {
+      ...item.payload,
+      name,
+      color,
+      driveFolderId,
+    }
+  });
+};
+
+export const deleteSubject = async (id: string) => {
+  await softDeleteItem(id);
+};
+
 // --- Task Specific CRUD ---
 
 export const getTasks = async (): Promise<Task[]> => {
@@ -336,12 +381,13 @@ export const deleteMemory = async (id: string) => {
 
 // --- Study Notes Specific CRUD ---
 
-export const itemToStudyNote = (item: BaseItem): StudyNote => {
+export const itemToStudyNote = (item: DBItem): StudyNote => {
   return {
     id: item.id,
     title: item.payload.title || '',
     content: item.payload.content || '',
-    subject: item.payload.subject || undefined,
+    subjectId: item.payload.subjectId || '',
+    topic: item.payload.topic || '',
     tags: item.payload.tags || [],
     createdAt: item.createdAt,
     updatedAt: item.updatedAt
@@ -353,16 +399,17 @@ export const getStudyNotes = async (): Promise<StudyNote[]> => {
   return items.map(itemToStudyNote).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 };
 
-export const addStudyNote = async (title: string, content: string, subject?: string, tags: Tag[] = []) => {
+export const addStudyNote = async (title: string, content: string, subjectId: string, topic: string, tags: Tag[] = []) => {
   await addItem('studynote', 'active', {
     title,
     content,
-    subject,
+    subjectId,
+    topic,
     tags
   });
 };
 
-export const editStudyNote = async (id: string, title: string, content: string, subject?: string, tags: Tag[] = []) => {
+export const editStudyNote = async (id: string, title: string, content: string, subjectId: string, topic: string, tags: Tag[] = []) => {
   const item = await db.items.get(id);
   if (!item) return;
 
@@ -372,14 +419,15 @@ export const editStudyNote = async (id: string, title: string, content: string, 
       ...item.payload,
       title,
       content,
-      subject,
+      subjectId,
+      topic,
       tags
     }
   });
 };
 
 export const deleteStudyNote = async (id: string) => {
-  await softDelete(id);
+  await softDeleteItem(id);
 };
 
 export const itemToEntertainment = (item: DBItem): import('./types').Entertainment => {

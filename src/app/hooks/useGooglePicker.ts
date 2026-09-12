@@ -9,11 +9,12 @@ declare global {
 }
 
 interface UseGooglePickerProps {
-  onPick: (file: { id: string, name: string, url: string }) => void;
+  onPick: (file: { id: string, name: string, url: string, mimeType?: string }) => void;
   accessToken?: string;
+  viewType?: 'images' | 'folders';
 }
 
-export function useGooglePicker({ onPick, accessToken }: UseGooglePickerProps) {
+export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: UseGooglePickerProps) {
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
 
   useEffect(() => {
@@ -65,12 +66,22 @@ export function useGooglePicker({ onPick, accessToken }: UseGooglePickerProps) {
           id: doc.id,
           name: doc.name,
           url: doc.url,
+          mimeType: doc.mimeType,
         });
       }
     };
 
-    const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
-    view.setIncludeFolders(true);
+    let view;
+    if (viewType === 'folders') {
+      view = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
+      view.setIncludeFolders(true);
+      view.setSelectFolderEnabled(true);
+      view.setMimeTypes('application/vnd.google-apps.folder');
+    } else {
+      view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
+      view.setIncludeFolders(true);
+    }
+    view.setParent('root'); // Forçar abertura a partir da raiz do Meu Drive
 
     const picker = new window.google.picker.PickerBuilder()
       .addView(view)
@@ -81,7 +92,7 @@ export function useGooglePicker({ onPick, accessToken }: UseGooglePickerProps) {
       .build();
 
     picker.setVisible(true);
-  }, [isPickerLoaded, accessToken, onPick]);
+  }, [isPickerLoaded, accessToken, onPick, viewType]);
 
   return { openPicker, isPickerLoaded };
 }
