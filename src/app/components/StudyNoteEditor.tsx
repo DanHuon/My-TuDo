@@ -117,20 +117,20 @@ export default function StudyNoteEditor({ note, onClose, initialMode = 'edit' }:
             <button onClick={setLinkOrImage}>🖼️ Imagem</button>
 
             <div className={styles.divider} />
-            <button onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.isActive('table')}>+ Linha</button>
-            <button onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.isActive('table')}>- Linha</button>
-            <button onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.isActive('table')}>+ Col</button>
-            <button onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.isActive('table')}>- Col</button>
-            <button onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.isActive('table')} style={{ color: editor?.isActive('table') ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
+            <button onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.can().addRowAfter()}>+ Linha</button>
+            <button onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.can().deleteRow()}>- Linha</button>
+            <button onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.can().addColumnAfter()}>+ Col</button>
+            <button onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.can().deleteColumn()}>- Col</button>
+            <button onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.can().deleteTable()} style={{ color: editor?.can().deleteTable() ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
           </div>
         )}
 
         <div className={styles.editorContainer} onClick={(e) => { 
-          // Apenas foca no final se o clique for exatemente no container ou no wrapper
-          // (evita que cliques dentro da tabela ou no texto roubem o foco)
-          const target = e.target as HTMLElement;
-          if (isEditing && editor && (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper))) {
-            editor.commands.focus('end');
+          if (isEditing && editor) {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper)) {
+              editor.commands.focus('end');
+            }
           }
         }}>
           <EditorContent editor={editor} className={styles.editorContentWrapper} />
