@@ -14,7 +14,8 @@ export default function SubjectForm({ subject, onClose }: Props) {
   const [name, setName] = useState(subject?.name || '');
   const [color, setColor] = useState(subject?.color || '#c8442f');
   const [driveFolderId, setDriveFolderId] = useState(subject?.driveFolderId || '');
-  const [folderName, setFolderName] = useState(subject?.driveFolderId ? 'Pasta Vinculada' : '');
+  const [driveInput, setDriveInput] = useState(subject?.driveFolderId || '');
+  const [driveInputStatus, setDriveInputStatus] = useState<'idle' | 'valid' | 'invalid'>(subject?.driveFolderId ? 'valid' : 'idle');
   
   const { session } = useAuth();
 
@@ -23,9 +24,40 @@ export default function SubjectForm({ subject, onClose }: Props) {
     viewType: 'folders',
     onPick: (file) => {
       setDriveFolderId(file.id);
-      setFolderName(file.name);
+      setDriveInput(file.id); // It's already the ID, so it's valid
+      setDriveInputStatus('valid');
     }
   });
+
+  const handleDriveInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDriveInput(val);
+    
+    if (!val.trim()) {
+      setDriveFolderId('');
+      setDriveInputStatus('idle');
+      return;
+    }
+
+    // Check if it's already just an ID (alphanumeric with dashes/underscores, usually 25+ chars)
+    // Drive IDs are typically 28 to 33 characters. We can just check length and regex.
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(val)) {
+      setDriveFolderId(val);
+      setDriveInputStatus('valid');
+      return;
+    }
+
+    // Try to extract via Regex
+    const urlMatch = val.match(/\/folders\/([a-zA-Z0-9_-]+)/) || val.match(/id=([a-zA-Z0-9_-]+)/);
+    
+    if (urlMatch && urlMatch[1]) {
+      setDriveFolderId(urlMatch[1]);
+      setDriveInputStatus('valid');
+    } else {
+      setDriveFolderId('');
+      setDriveInputStatus('invalid');
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,18 +110,32 @@ export default function SubjectForm({ subject, onClose }: Props) {
 
           <div className={styles.field}>
             <label>Google Drive (Opcional)</label>
-            <p className={styles.hint}>Vincule uma pasta do seu Drive para ver os scans e PDFs diretamente no Dashboard da matéria.</p>
-            <div className={styles.driveRow}>
+            <p className={styles.hint}>Vincule uma pasta do seu Drive colando o link abaixo ou escolhendo no Picker.</p>
+            
+            <div className={styles.driveHybrid}>
+              <div className={`${styles.inputWrapper} ${styles[driveInputStatus]}`}>
+                <input 
+                  type="text" 
+                  value={driveInput} 
+                  onChange={handleDriveInputChange}
+                  placeholder="Cole o link da pasta ou o ID..."
+                  className={styles.driveInput}
+                />
+                {driveInputStatus === 'valid' && <span className={styles.statusIcon}>✅</span>}
+                {driveInputStatus === 'invalid' && <span className={styles.statusIcon}>❌</span>}
+              </div>
+              
               <button type="button" onClick={openPicker} className={styles.pickerBtn}>
-                📁 {driveFolderId ? 'Trocar Pasta' : 'Vincular Pasta'}
+                📁 Buscar
               </button>
-              {folderName && <span className={styles.folderName}>{folderName}</span>}
-              {driveFolderId && (
-                <button type="button" onClick={() => { setDriveFolderId(''); setFolderName(''); }} className={styles.clearBtn}>
-                  ×
-                </button>
-              )}
             </div>
+            
+            {driveInputStatus === 'invalid' && (
+              <span className={styles.errorText}>URL do Drive não reconhecida.</span>
+            )}
+            {driveInputStatus === 'valid' && driveInput !== driveFolderId && (
+              <span className={styles.successText}>ID extraído: {driveFolderId}</span>
+            )}
           </div>
 
           <div className={styles.footer}>

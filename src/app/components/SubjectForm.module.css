@@ -89,48 +89,79 @@
   box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--ink);
 }
 
-.driveRow {
+.driveHybrid {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.driveInput {
+  flex: 1;
+  padding: 0.8rem;
+  padding-right: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.driveInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.inputWrapper.valid .driveInput {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.inputWrapper.invalid .driveInput {
+  border-color: var(--red);
+  background: #fce8e8;
+}
+
+.statusIcon {
+  position: absolute;
+  right: 0.8rem;
+  font-size: 1rem;
+}
+
 .pickerBtn {
   background: var(--bg);
   border: 1px solid var(--border);
-  padding: 0.5rem 1rem;
+  padding: 0.8rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   color: var(--ink);
   font-family: inherit;
   font-weight: 500;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .pickerBtn:hover {
   background: var(--border);
 }
 
-.folderName {
-  font-size: 0.9rem;
-  color: var(--success);
-  font-weight: 500;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clearBtn {
-  background: transparent;
-  border: none;
-  color: var(--ink-muted);
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.clearBtn:hover {
+.errorText {
   color: var(--red);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.successText {
+  color: var(--success);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
 }
 
 .footer {

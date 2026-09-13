@@ -71,25 +71,34 @@ export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: Us
       }
     };
 
-    let view;
-    if (viewType === 'folders') {
-      view = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
-      view.setIncludeFolders(true);
-      view.setSelectFolderEnabled(true);
-      view.setMimeTypes('application/vnd.google-apps.folder');
-    } else {
-      view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
-      view.setIncludeFolders(true);
-    }
-    view.setParent('root'); // Forçar abertura a partir da raiz do Meu Drive
-
-    const picker = new window.google.picker.PickerBuilder()
-      .addView(view)
+    let builder = new window.google.picker.PickerBuilder()
       .setOAuthToken(accessToken)
       .setDeveloperKey(apiKey)
       .setCallback(pickerCallback)
-      .setLocale('pt-BR')
-      .build();
+      .setLocale('pt-BR');
+
+    if (viewType === 'folders') {
+      const myDriveView = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
+      myDriveView.setIncludeFolders(true);
+      myDriveView.setSelectFolderEnabled(true);
+      myDriveView.setMimeTypes('application/vnd.google-apps.folder');
+      myDriveView.setParent('root');
+      
+      const sharedView = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
+      sharedView.setIncludeFolders(true);
+      sharedView.setSelectFolderEnabled(true);
+      sharedView.setMimeTypes('application/vnd.google-apps.folder');
+      sharedView.setOwnedByMe(false);
+
+      builder = builder.addView(myDriveView).addView(sharedView);
+    } else {
+      const imgView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
+      imgView.setIncludeFolders(true);
+      imgView.setParent('root');
+      builder = builder.addView(imgView);
+    }
+
+    const picker = builder.build();
 
     picker.setVisible(true);
   }, [isPickerLoaded, accessToken, onPick, viewType]);

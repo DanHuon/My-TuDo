@@ -40,11 +40,21 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
       setDriveError('');
       try {
         const query = `'${subject.driveFolderId}' in parents and (mimeType contains 'image/' or mimeType = 'application/pdf') and trashed = false`;
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,thumbnailLink,mimeType)&orderBy=createdTime desc`, {
+        const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,thumbnailLink,mimeType)&orderBy=createdTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+        
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${session.accessToken}` }
         });
         
-        if (!res.ok) throw new Error('Falha ao carregar scans do Drive');
+        if (!res.ok) {
+          if (res.status === 403) {
+            throw new Error('Você não tem permissão para ler esta pasta. Verifique se ela foi compartilhada com você.');
+          }
+          if (res.status === 404) {
+            throw new Error('Pasta não encontrada. Verifique se o link está correto ou se a pasta foi apagada.');
+          }
+          throw new Error('Falha ao carregar scans do Drive');
+        }
         
         const data = await res.json();
         setDriveFiles(data.files || []);
