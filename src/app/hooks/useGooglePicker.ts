@@ -11,7 +11,7 @@ declare global {
 interface UseGooglePickerProps {
   onPick: (file: { id: string, name: string, url: string, mimeType?: string }) => void;
   accessToken?: string;
-  viewType?: 'images' | 'folders';
+  viewType?: 'images' | 'folders' | 'files';
 }
 
 export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: UseGooglePickerProps) {
@@ -83,18 +83,33 @@ export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: Us
       myDriveView.setSelectFolderEnabled(true);
       myDriveView.setMimeTypes('application/vnd.google-apps.folder');
       myDriveView.setParent('root');
+      myDriveView.setTitle('Suas Pastas');
       
       const sharedView = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
       sharedView.setIncludeFolders(true);
       sharedView.setSelectFolderEnabled(true);
       sharedView.setMimeTypes('application/vnd.google-apps.folder');
       sharedView.setOwnedByMe(false);
+      sharedView.setTitle('Pastas Compartilhadas');
 
       builder = builder.addView(myDriveView).addView(sharedView);
+    } else if (viewType === 'files') {
+      const myFilesView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS);
+      myFilesView.setIncludeFolders(true);
+      myFilesView.setParent('root');
+      myFilesView.setTitle('Seus Arquivos');
+
+      const sharedFilesView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS);
+      sharedFilesView.setIncludeFolders(true);
+      sharedFilesView.setOwnedByMe(false);
+      sharedFilesView.setTitle('Compartilhados comigo');
+
+      builder = builder.addView(myFilesView).addView(sharedFilesView);
     } else {
       const imgView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
       imgView.setIncludeFolders(true);
       imgView.setParent('root');
+      imgView.setTitle('Suas Imagens');
       builder = builder.addView(imgView);
     }
 

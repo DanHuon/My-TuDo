@@ -34,7 +34,7 @@ const translateRRule = (rruleStr: any) => {
   if (parts['FREQ'] === 'DAILY') result = 'Diariamente'
   else if (parts['FREQ'] === 'WEEKLY') {
     if (parts['BYDAY']) {
-      const days = parts['BYDAY'].split(',').map(d => {
+      const days = parts['BYDAY'].split(',').map((d: string) => {
         if (d === 'MO') return 'segunda-feira'
         if (d === 'TU') return 'terça-feira'
         if (d === 'WE') return 'quarta-feira'
@@ -520,7 +520,7 @@ export default function CalendarModule() {
                       }}
                       onAdd={async (title, desc, dueDate, rrule, eventId, reminders) => {
                         const { addTask } = await import('@/app/lib/db')
-                        await addTask(title, desc, dueDate, rrule, reminders)
+                        await addTask(title, desc, dueDate, rrule, eventId, reminders)
                         setSelectedEvent(null)
                       }}
                       onCancel={() => setModalMode('view')}

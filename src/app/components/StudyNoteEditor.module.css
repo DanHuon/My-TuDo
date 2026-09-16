@@ -236,6 +236,322 @@
   background: var(--accent-hover);
 }
 
+/* Attachment Modal (Nested inside Editor) */
+.attachModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.attachModalContent {
+  background: var(--surface, #1e1916);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.attachHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.attachTitle {
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 600;
+}
+
+.attachTabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.attachTabBtn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 0.5rem;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.attachTabBtn:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.attachTabBtnActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.attachBody {
+  padding: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inputLabel {
+  font-size: 0.85rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.textInput {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.textInput:focus {
+  border-color: var(--accent);
+}
+
+.feedbackSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(40, 167, 69, 0.12);
+  border: 1px solid rgba(40, 167, 69, 0.35);
+  color: #5cd67b;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.feedbackError {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(220, 53, 69, 0.12);
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  color: #ff6b7d;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.modeSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.modeOptions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modeBtnActive {
+  background: rgba(212, 107, 74, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.scansMiniGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.6rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.2rem;
+}
+
+.scanMiniCard {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.scanMiniCard:hover {
+  border-color: var(--accent);
+}
+
+.scanMiniCardSelected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+}
+
+.scanMiniThumb {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+}
+
+.scanMiniFallback {
+  width: 100%;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background: var(--bg-hover);
+}
+
+.scanMiniName {
+  font-size: 0.75rem;
+  color: var(--ink);
+  padding: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.pickerPromo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  gap: 0.75rem;
+}
+
+.pickerIcon {
+  font-size: 2.5rem;
+}
+
+.pickerDesc {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+  max-width: 360px;
+  line-height: 1.4;
+}
+
+.pickerTriggerBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+
+.pickerTriggerBtn:hover {
+  filter: brightness(1.15);
+}
+
+.attachFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.attachInsertBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+
+.attachInsertBtn:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.attachInsertBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attachCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.attachCancelBtn:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
 @media (max-width: 768px) {
   .modalOverlay {
     padding: 0;
@@ -247,3 +563,4 @@
     border: none;
   }
 }
+

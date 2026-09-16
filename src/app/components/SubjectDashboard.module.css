@@ -212,8 +212,31 @@
   grid-column: 1 / -1;
 }
 
+.errorContainer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px dashed var(--red);
+  border-radius: 8px;
+  margin: 1rem;
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
 .errorText {
   color: var(--red);
+  font-style: normal;
+  font-size: 0.95rem;
+  margin: 0;
+  padding: 0;
 }
 
 /* Modal Overlay overrides for Editor */
@@ -223,12 +246,155 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   z-index: 100; /* Over dashboard but below google picker */
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 2rem;
+}
+
+/* Lightbox Modal */
+.lightboxOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.lightboxContent {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.lightboxHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.lightboxTitle {
+  font-size: 1.1rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+  margin: 0;
+}
+
+.lightboxCloseBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.lightboxCloseBtn:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lightboxBody {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #111;
+  min-height: 350px;
+  max-height: calc(90vh - 140px);
+}
+
+.lightboxImg {
+  max-width: 100%;
+  max-height: calc(90vh - 150px);
+  object-fit: contain;
+}
+
+.pdfIframe {
+  width: 100%;
+  height: 550px;
+  border: none;
+}
+
+.lightboxLoading {
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.lightboxActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.actionBtnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+
+.actionBtnPrimary:hover {
+  filter: brightness(1.15);
+}
+
+.actionBtnSecondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.actionBtnSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--ink-muted);
 }
 
 @media (max-width: 768px) {
@@ -238,4 +404,8 @@
   .paneLeft, .paneRight {
     min-height: 400px;
   }
+  .lightboxActions {
+    flex-wrap: wrap;
+  }
 }
+
