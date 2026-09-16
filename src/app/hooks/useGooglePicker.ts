@@ -83,33 +83,43 @@ export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: Us
       myDriveView.setSelectFolderEnabled(true);
       myDriveView.setMimeTypes('application/vnd.google-apps.folder');
       myDriveView.setParent('root');
-      myDriveView.setTitle('Suas Pastas');
+      if (typeof myDriveView.setLabel === 'function') {
+        myDriveView.setLabel('Suas Pastas');
+      }
       
       const sharedView = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS);
       sharedView.setIncludeFolders(true);
       sharedView.setSelectFolderEnabled(true);
       sharedView.setMimeTypes('application/vnd.google-apps.folder');
       sharedView.setOwnedByMe(false);
-      sharedView.setTitle('Pastas Compartilhadas');
+      if (typeof sharedView.setLabel === 'function') {
+        sharedView.setLabel('Pastas Compartilhadas');
+      }
 
       builder = builder.addView(myDriveView).addView(sharedView);
     } else if (viewType === 'files') {
       const myFilesView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS);
       myFilesView.setIncludeFolders(true);
       myFilesView.setParent('root');
-      myFilesView.setTitle('Seus Arquivos');
+      if (typeof myFilesView.setLabel === 'function') {
+        myFilesView.setLabel('Seus Arquivos');
+      }
 
       const sharedFilesView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS);
       sharedFilesView.setIncludeFolders(true);
       sharedFilesView.setOwnedByMe(false);
-      sharedFilesView.setTitle('Compartilhados comigo');
+      if (typeof sharedFilesView.setLabel === 'function') {
+        sharedFilesView.setLabel('Compartilhados comigo');
+      }
 
       builder = builder.addView(myFilesView).addView(sharedFilesView);
     } else {
       const imgView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES);
       imgView.setIncludeFolders(true);
       imgView.setParent('root');
-      imgView.setTitle('Suas Imagens');
+      if (typeof imgView.setLabel === 'function') {
+        imgView.setLabel('Suas Imagens');
+      }
       builder = builder.addView(imgView);
     }
 
