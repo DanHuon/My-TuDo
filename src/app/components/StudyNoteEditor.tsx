@@ -22,6 +22,7 @@ interface Props {
   initialTitle?: string;
   initialContent?: string;
   driveFiles?: DriveFile[];
+  isEmbedded?: boolean;
 }
 
 export default function StudyNoteEditor({
@@ -32,6 +33,7 @@ export default function StudyNoteEditor({
   initialTitle = '',
   initialContent = '',
   driveFiles = [],
+  isEmbedded = true,
 }: Props) {
   const [title, setTitle] = useState(note?.title || initialTitle || '');
   const [topic, setTopic] = useState(note?.topic || '');
@@ -115,14 +117,26 @@ export default function StudyNoteEditor({
 
   // Listener for inject-drive-image from SubjectDashboard
   useEffect(() => {
-    const handleInject = (e: CustomEvent) => {
-      if (editor && isEditing) {
-        editor.chain().focus().setDriveImage({ driveId: e.detail.id, url: '' }).run();
+    const handleInject = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (editor && isEditing && customEvent.detail) {
+        const { id, name, url, mimeType, size } = customEvent.detail;
+        if (mimeType && !mimeType.startsWith('image/')) {
+          editor.chain().focus().setDriveAttachment({
+            driveId: id,
+            name: name || 'Arquivo do Drive',
+            url: url || `https://drive.google.com/file/d/${id}/view`,
+            mimeType,
+            size,
+          }).run();
+        } else {
+          editor.chain().focus().setDriveImage({ driveId: id, url: url || '' }).run();
+        }
       }
     };
-    window.addEventListener('inject-drive-image', handleInject as EventListener);
+    window.addEventListener('inject-drive-image', handleInject);
     return () => {
-      window.removeEventListener('inject-drive-image', handleInject as EventListener);
+      window.removeEventListener('inject-drive-image', handleInject);
     };
   }, [editor, isEditing]);
 
@@ -234,10 +248,15 @@ export default function StudyNoteEditor({
     onClose();
   };
 
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-        <div className={styles.header}>
+  const editorBody = (
+    <>
+      <div className={styles.header}>
+        <div className={styles.headerLeftActions}>
+          {isEmbedded && (
+            <button type="button" className={styles.backBtn} onClick={onClose} title="Voltar para a lista">
+              ← Voltar
+            </button>
+          )}
           <input 
             type="text" 
             placeholder="Título da Nota" 
@@ -246,65 +265,88 @@ export default function StudyNoteEditor({
             className={styles.titleInput}
             readOnly={!isEditing}
           />
+        </div>
+        <div className={styles.headerRightActions}>
           {!isEditing && (
-            <button className={styles.editBtn} onClick={() => setIsEditing(true)}>Editar</button>
+            <button type="button" className={styles.editBtn} onClick={() => setIsEditing(true)}>Editar</button>
           )}
-          <button className={styles.closeBtn} onClick={onClose}>×</button>
+          {isEditing && (
+            <button type="button" onClick={handleSave} className={styles.saveBtnTop} title="Salvar Nota">Salvar</button>
+          )}
+          <button type="button" className={styles.closeBtn} onClick={onClose} title="Fechar">×</button>
         </div>
-
-        {isEditing && (
-          <div className={styles.toolbarRow}>
-            <input 
-              type="text" 
-              placeholder="Assunto (ex: Semana 1, Anatomia)" 
-              value={topic} 
-              onChange={(e) => setTopic(e.target.value)}
-              className={styles.subjectInput}
-            />
-          </div>
-        )}
-
-        {isEditing && (
-          <div className={styles.toolbar}>
-            <button onClick={() => editor?.chain().focus().toggleBold().run()} className={editor?.isActive('bold') ? styles.active : ''}>B</button>
-            <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={editor?.isActive('italic') ? styles.active : ''}>I</button>
-            <button onClick={() => editor?.chain().focus().toggleStrike().run()} className={editor?.isActive('strike') ? styles.active : ''}>S</button>
-            <div className={styles.divider} />
-            <button onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} className={editor?.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
-            <button onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} className={editor?.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
-            <div className={styles.divider} />
-            <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={editor?.isActive('bulletList') ? styles.active : ''}>• Lista</button>
-            <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={editor?.isActive('orderedList') ? styles.active : ''}>1. Lista</button>
-            <div className={styles.divider} />
-            <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Tabela</button>
-            <button onClick={() => setShowAttachModal(true)} title="Adicionar Imagem ou Anexo">📎 Anexo / Imagem</button>
-
-            <div className={styles.divider} />
-            <button onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.can().addRowAfter()}>+ Linha</button>
-            <button onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.can().deleteRow()}>- Linha</button>
-            <button onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.can().addColumnAfter()}>+ Col</button>
-            <button onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.can().deleteColumn()}>- Col</button>
-            <button onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.can().deleteTable()} style={{ color: editor?.can().deleteTable() ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
-          </div>
-        )}
-
-        <div className={styles.editorContainer} onClick={(e) => { 
-          if (isEditing && editor) {
-            const target = e.target as HTMLElement;
-            if (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper)) {
-              editor.commands.focus('end');
-            }
-          }
-        }}>
-          <EditorContent editor={editor} className={styles.editorContentWrapper} />
-        </div>
-
-        {isEditing && (
-          <div className={styles.footer}>
-            <button onClick={handleSave} className={styles.saveBtn}>Salvar Nota</button>
-          </div>
-        )}
       </div>
+
+      {isEditing && (
+        <div className={styles.toolbarRow}>
+          <input 
+            type="text" 
+            placeholder="Assunto (ex: Semana 1, Anatomia)" 
+            value={topic} 
+            onChange={(e) => setTopic(e.target.value)}
+            className={styles.subjectInput}
+          />
+        </div>
+      )}
+
+      {isEditing && (
+        <div className={styles.toolbar}>
+          <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()} className={editor?.isActive('bold') ? styles.active : ''}>B</button>
+          <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()} className={editor?.isActive('italic') ? styles.active : ''}>I</button>
+          <button type="button" onClick={() => editor?.chain().focus().toggleStrike().run()} className={editor?.isActive('strike') ? styles.active : ''}>S</button>
+          <div className={styles.divider} />
+          <button type="button" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} className={editor?.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
+          <button type="button" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} className={editor?.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
+          <div className={styles.divider} />
+          <button type="button" onClick={() => editor?.chain().focus().toggleBulletList().run()} className={editor?.isActive('bulletList') ? styles.active : ''}>• Lista</button>
+          <button type="button" onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={editor?.isActive('orderedList') ? styles.active : ''}>1. Lista</button>
+          <div className={styles.divider} />
+          <button type="button" onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Tabela</button>
+          <button type="button" onClick={() => setShowAttachModal(true)} title="Adicionar Imagem ou Anexo">📎 Anexo / Imagem</button>
+
+          <div className={styles.divider} />
+          <button type="button" onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.can().addRowAfter()}>+ Linha</button>
+          <button type="button" onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.can().deleteRow()}>- Linha</button>
+          <button type="button" onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.can().addColumnAfter()}>+ Col</button>
+          <button type="button" onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.can().deleteColumn()}>- Col</button>
+          <button type="button" onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.can().deleteTable()} style={{ color: editor?.can().deleteTable() ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
+        </div>
+      )}
+
+      <div className={styles.editorContainer} onClick={(e) => { 
+        if (isEditing && editor) {
+          const target = e.target as HTMLElement;
+          if (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper)) {
+            editor.commands.focus('end');
+          }
+        }
+      }}>
+        <EditorContent editor={editor} className={styles.editorContentWrapper} />
+      </div>
+
+      {isEditing && (
+        <div className={styles.footer}>
+          <button type="button" onClick={handleSave} className={styles.saveBtn}>Salvar Nota</button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {isEmbedded ? (
+        <div className={styles.embeddedContainer}>
+          <div className={styles.embeddedContent}>
+            {editorBody}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.modalOverlay} onClick={onClose}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            {editorBody}
+          </div>
+        </div>
+      )}
 
       {/* Modal Híbrido de Inserção de Anexo */}
       {showAttachModal && (
@@ -531,7 +573,7 @@ export default function StudyNoteEditor({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

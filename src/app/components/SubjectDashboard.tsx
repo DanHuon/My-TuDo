@@ -35,6 +35,7 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
   const [selectedNote, setSelectedNote] = useState<StudyNote | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [initialNoteData, setInitialNoteData] = useState<{ title?: string; content?: string } | null>(null);
+  const [activeMobileTab, setActiveMobileTab] = useState<'notes' | 'scans'>('notes');
 
   // Right Side: Drive Scans & Subfolder Navigation
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
@@ -174,12 +175,14 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
     setIsCreating(true);
     setSelectedNote(null);
     setInitialNoteData(null);
+    setActiveMobileTab('notes');
   };
 
   const handleEdit = (note: StudyNote) => {
     setSelectedNote(note);
     setIsCreating(false);
     setInitialNoteData(null);
+    setActiveMobileTab('notes');
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -223,6 +226,22 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
     setSelectedNote(null);
     setIsCreating(true);
     setPreviewFile(null);
+    setActiveMobileTab('notes');
+  };
+
+  const handleInjectIntoCurrentNote = (file: DriveFile) => {
+    const fileUrl = file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`;
+    window.dispatchEvent(new CustomEvent('inject-drive-image', {
+      detail: {
+        id: file.id,
+        name: file.name,
+        url: fileUrl,
+        mimeType: file.mimeType,
+        size: file.size,
+      }
+    }));
+    setPreviewFile(null);
+    setActiveMobileTab('notes');
   };
 
   const handleCopyLink = (file: DriveFile) => {
@@ -241,32 +260,65 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
         </div>
       </header>
 
-      <div className={styles.splitPane}>
-        {/* Lado Esquerdo: Anotações */}
-        <div className={styles.paneLeft}>
-          <div className={styles.paneHeader}>
-            <h3>Anotações</h3>
-            <button onClick={handleCreateNew} className={styles.addBtn}>+ Nova Nota</button>
-          </div>
+      {/* Barra de Abas Mobile (Apenas telas <= 768px) */}
+      <div className={styles.mobileTabBar}>
+        <button
+          type="button"
+          className={`${styles.mobileTabBtn} ${activeMobileTab === 'notes' ? styles.mobileTabBtnActive : ''}`}
+          onClick={() => setActiveMobileTab('notes')}
+        >
+          📝 Anotações {notes.length > 0 && `(${notes.length})`}
+        </button>
+        <button
+          type="button"
+          className={`${styles.mobileTabBtn} ${activeMobileTab === 'scans' ? styles.mobileTabBtnActive : ''}`}
+          onClick={() => setActiveMobileTab('scans')}
+        >
+          ☁️ Scans {driveFiles.length > 0 && `(${driveFiles.length})`}
+        </button>
+      </div>
 
-          <div className={styles.notesList}>
-            {Object.keys(groupedNotes).map(topic => (
-              <div key={topic} className={styles.topicGroup}>
-                <h4 className={styles.topicTitle}>{topic}</h4>
-                {groupedNotes[topic].map(note => (
-                  <div key={note.id} className={styles.noteItem} onClick={() => handleEdit(note)}>
-                    <span className={styles.noteTitle}>{note.title || 'Sem título'}</span>
-                    <button onClick={(e) => handleDelete(note.id, e)} className={styles.deleteNoteBtn}>×</button>
+      <div className={styles.splitPane}>
+        {/* Lado Esquerdo: Anotações ou Editor Embutido */}
+        <div className={`${styles.paneLeft} ${activeMobileTab === 'notes' ? styles.paneActiveMobile : styles.paneHiddenMobile}`}>
+          {(isCreating || selectedNote) ? (
+            <StudyNoteEditor 
+              note={selectedNote} 
+              initialTitle={initialNoteData?.title}
+              initialContent={initialNoteData?.content}
+              driveFiles={driveFiles}
+              onClose={closeEditor} 
+              initialMode={isCreating ? 'edit' : 'view'}
+              subjectId={subject.id}
+              isEmbedded={true}
+            />
+          ) : (
+            <>
+              <div className={styles.paneHeader}>
+                <h3>Anotações</h3>
+                <button onClick={handleCreateNew} className={styles.addBtn}>+ Nova Nota</button>
+              </div>
+
+              <div className={styles.notesList}>
+                {Object.keys(groupedNotes).map(topic => (
+                  <div key={topic} className={styles.topicGroup}>
+                    <h4 className={styles.topicTitle}>{topic}</h4>
+                    {groupedNotes[topic].map(note => (
+                      <div key={note.id} className={styles.noteItem} onClick={() => handleEdit(note)}>
+                        <span className={styles.noteTitle}>{note.title || 'Sem título'}</span>
+                        <button onClick={(e) => handleDelete(note.id, e)} className={styles.deleteNoteBtn} title="Apagar nota">×</button>
+                      </div>
+                    ))}
                   </div>
                 ))}
+                {notes.length === 0 && <p className={styles.emptyText}>Nenhuma anotação nesta matéria.</p>}
               </div>
-            ))}
-            {notes.length === 0 && <p className={styles.emptyText}>Nenhuma anotação nesta matéria.</p>}
-          </div>
+            </>
+          )}
         </div>
 
         {/* Lado Direito: Scans */}
-        <div className={styles.paneRight}>
+        <div className={`${styles.paneRight} ${activeMobileTab === 'scans' ? styles.paneActiveMobile : styles.paneHiddenMobile}`}>
           <div className={styles.paneHeader}>
             <h3>Scans da Nuvem {subject.driveFolderId ? '☁️' : '🚫'}</h3>
           </div>
@@ -401,6 +453,7 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
 
             <footer className={styles.lightboxActions}>
               <button
+                type="button"
                 className={styles.actionBtnSecondary}
                 onClick={() => handleCopyLink(previewFile)}
               >
@@ -414,7 +467,19 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
               >
                 Abrir no Drive ↗
               </a>
+              {(isCreating || selectedNote) && (
+                <button
+                  type="button"
+                  className={styles.actionBtnPrimary}
+                  onClick={() => handleInjectIntoCurrentNote(previewFile)}
+                  title="Insere este anexo no cursor da nota aberta"
+                  style={{ background: 'var(--accent-hover)' }}
+                >
+                  📥 Inserir na nota aberta
+                </button>
+              )}
               <button
+                type="button"
                 className={styles.actionBtnPrimary}
                 onClick={() => handleCreateNoteFromScan(previewFile)}
               >
@@ -422,20 +487,6 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
               </button>
             </footer>
           </div>
-        </div>
-      )}
-
-      {(isCreating || selectedNote) && (
-        <div className={styles.editorOverlay}>
-          <StudyNoteEditor 
-            note={selectedNote} 
-            initialTitle={initialNoteData?.title}
-            initialContent={initialNoteData?.content}
-            driveFiles={driveFiles}
-            onClose={closeEditor} 
-            initialMode={isCreating ? 'edit' : 'view'}
-            subjectId={subject.id}
-          />
         </div>
       )}
     </div>

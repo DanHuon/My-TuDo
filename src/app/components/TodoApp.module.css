@@ -98,6 +98,16 @@
   flex-direction: column;
 }
 
+.studiesFull {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
 /* ── Tasks Sub-Sidebar ── */
 .subSidebar {
   padding: 2.5rem 2rem 2.5rem 3rem;

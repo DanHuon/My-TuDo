@@ -328,7 +328,7 @@ export default function TodoApp() {
       )}
 
       {activeModule === 'studies' && (
-        <div className={styles.mainFull}>
+        <div className={styles.studiesFull}>
           <StudyModule />
         </div>
       )}
@@ -340,7 +340,7 @@ export default function TodoApp() {
         </div>
       )}
 
-      <footer className={`${styles.footer} ${activeModule === 'calendar' ? styles.hideMobileCalendar : ''}`}>
+      <footer className={`${styles.footer} ${(activeModule === 'calendar' || activeModule === 'studies') ? styles.hideMobileCalendar : ''}`}>
         <div className={styles.footerRule} />
         <div className={styles.footerInner}>
           <span>Tarefas - {new Date().getFullYear()}</span>
