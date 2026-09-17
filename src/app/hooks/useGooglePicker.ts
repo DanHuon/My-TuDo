@@ -109,7 +109,7 @@ export function useGooglePicker({ onPick, accessToken, viewType = 'images' }: Us
       sharedFilesView.setIncludeFolders(true);
       sharedFilesView.setOwnedByMe(false);
       if (typeof sharedFilesView.setLabel === 'function') {
-        sharedFilesView.setLabel('Compartilhados comigo');
+        sharedFilesView.setLabel('Arquivos Compartilhados');
       }
 
       builder = builder.addView(myFilesView).addView(sharedFilesView);

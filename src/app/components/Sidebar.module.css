@@ -8,9 +8,13 @@
   height: 100vh;
   position: sticky;
   top: 0;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, margin-left 0.3s ease;
   z-index: 100;
   flex-shrink: 0;
+}
+
+.sidebarCollapsed {
+  margin-left: -240px;
 }
 
 .logoArea {
@@ -134,20 +138,12 @@
     position: fixed;
     transform: translateX(-100%);
     box-shadow: var(--shadow-hover);
+    margin-left: 0 !important;
   }
   .sidebarOpen {
     transform: translateX(0);
   }
-  .hamburgerBtn {
-    display: flex;
-  }
   .overlayOpen {
     display: block;
-  }
-}
-
-@media (min-width: 769px) {
-  .hamburgerBtn:not(.syncingAnimation) {
-    display: none;
   }
 }

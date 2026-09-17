@@ -11,6 +11,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activeModule, onModuleChange, isSyncing }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   
   // Draggable Hamburger State
   const [position, setPosition] = useState({ x: 16, y: 16 })
@@ -27,7 +28,24 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
     } else {
       setPosition({ x: 16, y: window.innerHeight - 80 })
     }
+
+    const savedCollapsed = localStorage.getItem('mytudo-sidebar-collapsed')
+    if (savedCollapsed) {
+      setIsDesktopCollapsed(savedCollapsed === 'true')
+    }
   }, [])
+
+  const toggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      setIsOpen(prev => !prev)
+    } else {
+      setIsDesktopCollapsed(prev => {
+        const next = !prev
+        localStorage.setItem('mytudo-sidebar-collapsed', String(next))
+        return next
+      })
+    }
+  }
 
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(false)
@@ -85,13 +103,13 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
     <>
       <button 
         className={`${styles.hamburgerBtn} ${isSyncing ? styles.syncingAnimation : ''}`}
-        onClick={() => { if(!isDragging) setIsOpen(true) }}
+        onClick={() => { if(!isDragging) toggleSidebar() }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         style={{ left: `${position.x}px`, top: `${position.y}px`, touchAction: 'none' }}
-        aria-label="Open menu"
+        aria-label="Abrir ou recolher menu"
       >
         {isSyncing ? '↻' : '☰'}
       </button>
@@ -101,7 +119,7 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
         onClick={() => setIsOpen(false)} 
       />
 
-      <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''} ${isDesktopCollapsed ? styles.sidebarCollapsed : ''}`}>
         <div className={styles.logoArea}>
           <span className={styles.logoMark}>@</span>
           <span className={styles.logoText}>MyTuDo</span>

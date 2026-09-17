@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getStudyNotes, deleteStudyNote } from '@/app/lib/db';
 import { Subject, StudyNote } from '@/app/lib/types';
@@ -21,6 +21,11 @@ export interface DriveFile {
   mimeType: string;
 }
 
+interface FolderCrumb {
+  id: string;
+  name: string;
+}
+
 export default function SubjectDashboard({ subject, onBack }: Props) {
   const { session } = useAuth();
   
@@ -31,52 +36,103 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
   const [isCreating, setIsCreating] = useState(false);
   const [initialNoteData, setInitialNoteData] = useState<{ title?: string; content?: string } | null>(null);
 
-  // Right Side: Drive Scans
+  // Right Side: Drive Scans & Subfolder Navigation
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [driveError, setDriveError] = useState('');
+
+  // Breadcrumbs Stack & In-Memory Cache (0ms instant transition on back/revisit)
+  const [folderStack, setFolderStack] = useState<FolderCrumb[]>([]);
+  const folderCacheRef = useRef<Record<string, DriveFile[]>>({});
+
+  useEffect(() => {
+    if (subject.driveFolderId) {
+      setFolderStack([{ id: subject.driveFolderId, name: subject.name }]);
+    } else {
+      setFolderStack([]);
+    }
+  }, [subject.driveFolderId, subject.name]);
+
+  const currentFolder = folderStack.length > 0 ? folderStack[folderStack.length - 1] : null;
+
+  // Fetch files and subfolders
+  const fetchFiles = async (folderId: string, forceRefresh = false) => {
+    if (!session?.accessToken) return;
+
+    if (!forceRefresh && folderCacheRef.current[folderId]) {
+      setDriveFiles(folderCacheRef.current[folderId]);
+      setDriveError('');
+      return;
+    }
+
+    setLoadingDrive(true);
+    setDriveError('');
+    try {
+      const query = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType = 'application/pdf' or mimeType = 'application/vnd.google-apps.folder') and trashed = false`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,thumbnailLink,webViewLink,iconLink,size,mimeType)&orderBy=createdTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+
+      if (!res.ok) {
+        if (res.status === 403) {
+          throw new Error('Você não tem permissão para ler esta pasta. Verifique se ela foi compartilhada com você.');
+        }
+        if (res.status === 404) {
+          throw new Error('Pasta não encontrada. Verifique se o link está correto ou se a pasta foi apagada.');
+        }
+        throw new Error('Falha ao carregar scans do Drive');
+      }
+
+      const data = await res.json();
+      const files: DriveFile[] = data.files || [];
+
+      // Sort: Folders first, then files
+      files.sort((a, b) => {
+        const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
+        const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
+        if (aIsFolder && !bIsFolder) return -1;
+        if (!aIsFolder && bIsFolder) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      folderCacheRef.current[folderId] = files;
+      setDriveFiles(files);
+    } catch (err: any) {
+      setDriveError(err.message || 'Erro ao carregar arquivos da pasta vinculada.');
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentFolder?.id) {
+      fetchFiles(currentFolder.id);
+    } else {
+      setDriveFiles([]);
+    }
+  }, [currentFolder?.id, session?.accessToken]);
+
+  const handleOpenFolder = (folder: DriveFile) => {
+    setFolderStack(prev => [...prev, { id: folder.id, name: folder.name }]);
+  };
+
+  const handleNavigateToCrumb = (index: number) => {
+    setFolderStack(prev => prev.slice(0, index + 1));
+  };
+
+  const handleRefreshFolder = () => {
+    if (currentFolder?.id) {
+      fetchFiles(currentFolder.id, true);
+    }
+  };
 
   // Lightbox Preview
   const [previewFile, setPreviewFile] = useState<DriveFile | null>(null);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  useEffect(() => {
-    if (!subject.driveFolderId || !session?.accessToken) return;
-
-    const fetchFiles = async () => {
-      setLoadingDrive(true);
-      setDriveError('');
-      try {
-        const query = `'${subject.driveFolderId}' in parents and (mimeType contains 'image/' or mimeType = 'application/pdf') and trashed = false`;
-        const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,thumbnailLink,webViewLink,iconLink,size,mimeType)&orderBy=createdTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
-        
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${session.accessToken}` }
-        });
-        
-        if (!res.ok) {
-          if (res.status === 403) {
-            throw new Error('Você não tem permissão para ler esta pasta. Verifique se ela foi compartilhada com você.');
-          }
-          if (res.status === 404) {
-            throw new Error('Pasta não encontrada. Verifique se o link está correto ou se a pasta foi apagada.');
-          }
-          throw new Error('Falha ao carregar scans do Drive');
-        }
-        
-        const data = await res.json();
-        setDriveFiles(data.files || []);
-      } catch (err: any) {
-        setDriveError(err.message || 'Erro ao carregar arquivos da pasta vinculada.');
-      } finally {
-        setLoadingDrive(false);
-      }
-    };
-
-    fetchFiles();
-  }, [subject.driveFolderId, session?.accessToken]);
 
   // Load high-resolution preview blob when an image is clicked
   useEffect(() => {
@@ -214,6 +270,39 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
           <div className={styles.paneHeader}>
             <h3>Scans da Nuvem {subject.driveFolderId ? '☁️' : '🚫'}</h3>
           </div>
+
+          {/* Breadcrumbs de Navegação em Subpastas */}
+          {folderStack.length > 0 && (
+            <div className={styles.breadcrumbBar}>
+              <div className={styles.breadcrumbPath}>
+                {folderStack.map((crumb, idx) => {
+                  const isLast = idx === folderStack.length - 1;
+                  return (
+                    <React.Fragment key={crumb.id + idx}>
+                      <button
+                        type="button"
+                        className={`${styles.breadcrumbCrumb} ${isLast ? styles.breadcrumbCrumbActive : ''}`}
+                        onClick={() => handleNavigateToCrumb(idx)}
+                        disabled={isLast}
+                        title={crumb.name}
+                      >
+                        {idx === 0 ? `📁 ${crumb.name}` : crumb.name}
+                      </button>
+                      {!isLast && <span className={styles.breadcrumbSeparator}>›</span>}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                className={styles.refreshBtn}
+                onClick={handleRefreshFolder}
+                title="Recarregar pasta atual"
+              >
+                ↻
+              </button>
+            </div>
+          )}
           
           <div className={styles.gallery}>
             {!subject.driveFolderId && (
@@ -228,23 +317,42 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
               </div>
             )}
             
-            {!loadingDrive && !driveError && driveFiles.map(file => (
-              <div
-                key={file.id}
-                className={styles.scanCard}
-                onClick={() => setPreviewFile(file)}
-                title="Clique para pré-visualizar e anexar"
-              >
-                {file.thumbnailLink ? (
-                  <img src={file.thumbnailLink} alt={file.name} className={styles.scanImg} />
-                ) : (
-                  <div className={styles.scanFallback}>
-                    {file.mimeType.includes('pdf') ? '📄' : '📁'}
+            {!loadingDrive && !driveError && driveFiles.map(file => {
+              const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+
+              if (isFolder) {
+                return (
+                  <div
+                    key={file.id}
+                    className={`${styles.scanCard} ${styles.folderCard}`}
+                    onClick={() => handleOpenFolder(file)}
+                    title={`Abrir subpasta: ${file.name}`}
+                  >
+                    <div className={styles.scanFallback}>📁</div>
+                    <span className={styles.scanName}>{file.name}</span>
+                    <span className={styles.folderBadge}>Pasta</span>
                   </div>
-                )}
-                <span className={styles.scanName}>{file.name}</span>
-              </div>
-            ))}
+                );
+              }
+
+              return (
+                <div
+                  key={file.id}
+                  className={styles.scanCard}
+                  onClick={() => setPreviewFile(file)}
+                  title="Clique para pré-visualizar e anexar"
+                >
+                  {file.thumbnailLink ? (
+                    <img src={file.thumbnailLink} alt={file.name} className={styles.scanImg} />
+                  ) : (
+                    <div className={styles.scanFallback}>
+                      {file.mimeType.includes('pdf') ? '📄' : '📁'}
+                    </div>
+                  )}
+                  <span className={styles.scanName}>{file.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

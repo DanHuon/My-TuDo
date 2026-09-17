@@ -159,6 +159,100 @@
   align-content: start;
 }
 
+/* Breadcrumbs de Navegação */
+.breadcrumbBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+}
+
+.breadcrumbPath {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex: 1;
+  scrollbar-width: thin;
+}
+
+.breadcrumbCrumb {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  transition: background 0.15s ease;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbCrumb:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: underline;
+}
+
+.breadcrumbCrumbActive {
+  color: var(--ink);
+  font-weight: 600;
+  cursor: default;
+}
+
+.breadcrumbSeparator {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.refreshBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.refreshBtn:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--ink-muted);
+}
+
+.folderCard {
+  background: rgba(45, 38, 34, 0.6);
+  border-color: rgba(212, 107, 74, 0.3);
+}
+
+.folderCard:hover {
+  border-color: var(--accent);
+  background: rgba(55, 46, 41, 0.8);
+}
+
+.folderBadge {
+  font-size: 0.65rem;
+  color: var(--accent);
+  text-align: center;
+  padding-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
 .scanCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
