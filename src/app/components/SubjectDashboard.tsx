@@ -69,6 +69,28 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
     setLoadingDrive(true);
     setDriveError('');
     try {
+      // 1. Validação explícita de permissão e existência da pasta (evita lista vazia silenciosa)
+      const folderCheckUrl = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,capabilities(canListChildren)&supportsAllDrives=true`;
+      const folderRes = await fetch(folderCheckUrl, {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+
+      if (!folderRes.ok) {
+        if (folderRes.status === 403) {
+          throw new Error('Você não tem permissão para ler esta pasta. Verifique se ela foi compartilhada com você.');
+        }
+        if (folderRes.status === 404) {
+          throw new Error('Pasta não encontrada ou privada. Verifique se o link está correto e se você tem acesso a ela.');
+        }
+        throw new Error('Falha ao verificar acesso à pasta do Drive.');
+      }
+
+      const folderMeta = await folderRes.json();
+      if (folderMeta.capabilities && folderMeta.capabilities.canListChildren === false) {
+        throw new Error('Você não tem permissão para visualizar o conteúdo desta pasta.');
+      }
+
+      // 2. Busca dos arquivos e subpastas
       const query = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType = 'application/pdf' or mimeType = 'application/vnd.google-apps.folder') and trashed = false`;
       const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,thumbnailLink,webViewLink,iconLink,size,mimeType)&orderBy=createdTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
 

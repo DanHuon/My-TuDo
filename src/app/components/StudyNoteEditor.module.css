@@ -213,6 +213,61 @@
   margin: 0 0.2rem;
 }
 
+/* Table Grid Popover */
+.tableButtonWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.tableGridPopover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  padding: 0.75rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tableGridHeader {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  text-align: center;
+}
+
+.tableGridMatrix {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tableGridRow {
+  display: flex;
+  gap: 3px;
+}
+
+.tableGridCell {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.tableGridCellSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .editorContainer {
   flex: 1;
   overflow-y: auto;

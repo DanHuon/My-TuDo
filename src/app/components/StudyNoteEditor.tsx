@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Table } from '@tiptap/extension-table';
@@ -40,6 +40,12 @@ export default function StudyNoteEditor({
   const [isEditing, setIsEditing] = useState(initialMode === 'edit');
   const { session } = useAuth();
 
+  // Table Grid Popover & Re-render Tick States
+  const [, setEditorTick] = useState(0);
+  const [showTableGrid, setShowTableGrid] = useState(false);
+  const [gridHover, setGridHover] = useState<{ rows: number; cols: number }>({ rows: 1, cols: 1 });
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+
   // Attachment Modal State
   const [showAttachModal, setShowAttachModal] = useState(false);
   const [attachTab, setAttachTab] = useState<'link' | 'scans' | 'picker'>('link');
@@ -70,13 +76,31 @@ export default function StudyNoteEditor({
       DriveAttachmentExtension,
       Table.configure({
         resizable: true,
+        HTMLAttributes: {
+          border: '1',
+          style: 'border-collapse: collapse; border: 1px solid #ccc; width: 100%;',
+        },
       }),
       TableRow,
-      TableHeader,
-      TableCell,
+      TableHeader.configure({
+        HTMLAttributes: {
+          style: 'border: 1px solid #ccc; padding: 4px 8px; font-weight: bold; background-color: #f3f3f3;',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          style: 'border: 1px solid #ccc; padding: 4px 8px; min-width: 1em;',
+        },
+      }),
     ],
     content: note?.content || initialContent || '',
     editable: isEditing,
+    onSelectionUpdate: () => {
+      setEditorTick(t => t + 1);
+    },
+    onTransaction: () => {
+      setEditorTick(t => t + 1);
+    },
     editorProps: {
       attributes: {
         class: styles.tiptapEditor,
@@ -236,6 +260,52 @@ export default function StudyNoteEditor({
     setPickerSelectedFile(null);
   };
 
+  // Outside click listener for Table Grid Popover
+  useEffect(() => {
+    if (!showTableGrid) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tableWrapperRef.current && !tableWrapperRef.current.contains(e.target as Node)) {
+        setShowTableGrid(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTableGrid]);
+
+  const handleInsertTable = (rows: number, cols: number) => {
+    if (!editor) return;
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+    setEditorTick(t => t + 1);
+    setShowTableGrid(false);
+  };
+
+  const handleAddRow = () => {
+    editor?.chain().focus().addRowAfter().run();
+    setEditorTick(t => t + 1);
+  };
+
+  const handleDeleteRow = () => {
+    editor?.chain().focus().deleteRow().run();
+    setEditorTick(t => t + 1);
+  };
+
+  const handleAddCol = () => {
+    editor?.chain().focus().addColumnAfter().run();
+    setEditorTick(t => t + 1);
+  };
+
+  const handleDeleteCol = () => {
+    editor?.chain().focus().deleteColumn().run();
+    setEditorTick(t => t + 1);
+  };
+
+  const handleDeleteTable = () => {
+    editor?.chain().focus().deleteTable().run();
+    setEditorTick(t => t + 1);
+  };
+
   const handleSave = async () => {
     if (!editor) return;
     const content = editor.getHTML();
@@ -301,15 +371,54 @@ export default function StudyNoteEditor({
           <button type="button" onClick={() => editor?.chain().focus().toggleBulletList().run()} className={editor?.isActive('bulletList') ? styles.active : ''}>• Lista</button>
           <button type="button" onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={editor?.isActive('orderedList') ? styles.active : ''}>1. Lista</button>
           <div className={styles.divider} />
-          <button type="button" onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Tabela</button>
+          
+          {/* Popover de Grade Visual 10x10 para Criação de Tabela */}
+          <div className={styles.tableButtonWrapper} ref={tableWrapperRef}>
+            <button 
+              type="button" 
+              onClick={() => setShowTableGrid(!showTableGrid)} 
+              className={showTableGrid || editor?.isActive('table') ? styles.active : ''}
+              title="Inserir Tabela"
+            >
+              Tabela ▾
+            </button>
+            {showTableGrid && (
+              <div className={styles.tableGridPopover} onMouseLeave={() => setGridHover({ rows: 1, cols: 1 })}>
+                <div className={styles.tableGridHeader}>
+                  <span>Tabela {gridHover.rows} × {gridHover.cols}</span>
+                </div>
+                <div className={styles.tableGridMatrix}>
+                  {Array.from({ length: 10 }).map((_, rIdx) => (
+                    <div key={rIdx} className={styles.tableGridRow}>
+                      {Array.from({ length: 10 }).map((_, cIdx) => {
+                        const r = rIdx + 1;
+                        const c = cIdx + 1;
+                        const isSelected = r <= gridHover.rows && c <= gridHover.cols;
+                        return (
+                          <div
+                            key={cIdx}
+                            className={`${styles.tableGridCell} ${isSelected ? styles.tableGridCellSelected : ''}`}
+                            onMouseEnter={() => setGridHover({ rows: r, cols: c })}
+                            onClick={() => handleInsertTable(r, c)}
+                            title={`${r} × ${c}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button type="button" onClick={() => setShowAttachModal(true)} title="Adicionar Imagem ou Anexo">📎 Anexo / Imagem</button>
 
           <div className={styles.divider} />
-          <button type="button" onClick={() => editor?.chain().focus().addRowAfter().run()} disabled={!editor?.can().addRowAfter()}>+ Linha</button>
-          <button type="button" onClick={() => editor?.chain().focus().deleteRow().run()} disabled={!editor?.can().deleteRow()}>- Linha</button>
-          <button type="button" onClick={() => editor?.chain().focus().addColumnAfter().run()} disabled={!editor?.can().addColumnAfter()}>+ Col</button>
-          <button type="button" onClick={() => editor?.chain().focus().deleteColumn().run()} disabled={!editor?.can().deleteColumn()}>- Col</button>
-          <button type="button" onClick={() => editor?.chain().focus().deleteTable().run()} disabled={!editor?.can().deleteTable()} style={{ color: editor?.can().deleteTable() ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
+          <button type="button" onClick={handleAddRow} disabled={!editor?.can().addRowAfter()}>+ Linha</button>
+          <button type="button" onClick={handleDeleteRow} disabled={!editor?.can().deleteRow()}>- Linha</button>
+          <button type="button" onClick={handleAddCol} disabled={!editor?.can().addColumnAfter()}>+ Col</button>
+          <button type="button" onClick={handleDeleteCol} disabled={!editor?.can().deleteColumn()}>- Col</button>
+          <button type="button" onClick={handleDeleteTable} disabled={!editor?.can().deleteTable()} style={{ color: editor?.can().deleteTable() ? 'var(--red)' : 'inherit' }}>Apagar Tabela</button>
         </div>
       )}
 
