@@ -305,11 +305,16 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
   height: 180px;
+  user-select: none;
+}
+
+.scanCard:active {
+  cursor: grabbing;
 }
 
 .scanCard:hover {

@@ -9,7 +9,8 @@ export interface DriveImageOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     driveImage: {
-      setDriveImage: (options: { driveId: string, url?: string }) => ReturnType;
+      setDriveImage: (options: { driveId: string, url?: string, alignment?: 'left' | 'center' | 'right' }) => ReturnType;
+      setImageAlignment: (alignment: 'left' | 'center' | 'right') => ReturnType;
     }
   }
 }
@@ -33,6 +34,13 @@ export const DriveImageExtension = Node.create<DriveImageOptions>({
       },
       width: {
         default: null,
+      },
+      alignment: {
+        default: 'center',
+        parseHTML: (element) => element.getAttribute('data-alignment') || 'center',
+        renderHTML: (attributes) => ({
+          'data-alignment': attributes.alignment || 'center',
+        }),
       },
     };
   },
@@ -63,8 +71,12 @@ export const DriveImageExtension = Node.create<DriveImageOptions>({
           type: this.name,
           attrs: {
             'data-drive-id': options.driveId,
+            alignment: options.alignment || 'center',
           },
         });
+      },
+      setImageAlignment: (alignment) => ({ commands }) => {
+        return commands.updateAttributes(this.name, { alignment });
       },
     };
   },

@@ -193,6 +193,20 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
     };
   }, [previewFile, session?.accessToken]);
 
+  // Listener for open-pdf-lightbox from DriveAttachmentNode
+  useEffect(() => {
+    const handleOpenPdfLightbox = (e: Event) => {
+      const customEvent = e as CustomEvent<DriveFile>;
+      if (customEvent.detail) {
+        setPreviewFile(customEvent.detail);
+      }
+    };
+    window.addEventListener('open-pdf-lightbox', handleOpenPdfLightbox);
+    return () => {
+      window.removeEventListener('open-pdf-lightbox', handleOpenPdfLightbox);
+    };
+  }, []);
+
   const handleCreateNew = () => {
     setIsCreating(true);
     setSelectedNote(null);
@@ -414,7 +428,21 @@ export default function SubjectDashboard({ subject, onBack }: Props) {
                   key={file.id}
                   className={styles.scanCard}
                   onClick={() => setPreviewFile(file)}
-                  title="Clique para pré-visualizar e anexar"
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(
+                      'application/json',
+                      JSON.stringify({
+                        id: file.id,
+                        name: file.name,
+                        mimeType: file.mimeType,
+                        webViewLink: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
+                        size: file.size,
+                      })
+                    );
+                    e.dataTransfer.effectAllowed = 'copy';
+                  }}
+                  title="Clique para pré-visualizar ou arraste para o editor"
                 >
                   {file.thumbnailLink ? (
                     <img src={file.thumbnailLink} alt={file.name} className={styles.scanImg} />

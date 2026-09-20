@@ -17,7 +17,9 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
   let icon = '📎';
   let typeLabel = 'Arquivo';
 
-  if (mimeType.includes('pdf') || lowerName.endsWith('.pdf')) {
+  const isPdf = mimeType.includes('pdf') || lowerName.endsWith('.pdf');
+
+  if (isPdf) {
     icon = '📄';
     typeLabel = 'Documento PDF';
   } else if (mimeType.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(lowerName)) {
@@ -33,6 +35,23 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
     icon = '📝';
     typeLabel = 'Texto / Doc';
   }
+
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPdf && driveId) {
+      e.preventDefault();
+      window.dispatchEvent(
+        new CustomEvent('open-pdf-lightbox', {
+          detail: {
+            id: driveId,
+            name: name,
+            mimeType: mimeType || 'application/pdf',
+            webViewLink: rawUrl || `https://drive.google.com/file/d/${driveId}/view`,
+          },
+        })
+      );
+    }
+  };
 
   return (
     <NodeViewWrapper className={styles.cardWrapper}>
@@ -51,10 +70,10 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
           target="_blank"
           rel="noopener noreferrer"
           className={styles.actionBtn}
-          title="Abrir arquivo em uma nova aba"
-          onClick={(e) => e.stopPropagation()}
+          title={isPdf ? 'Visualizar PDF no aplicativo' : 'Abrir arquivo em uma nova aba'}
+          onClick={handleOpen}
         >
-          Abrir ↗
+          {isPdf ? 'Visualizar ↗' : 'Abrir ↗'}
         </a>
       </div>
     </NodeViewWrapper>

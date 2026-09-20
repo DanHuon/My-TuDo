@@ -7,6 +7,7 @@ export default function DriveImageNode(props: NodeViewProps) {
   const { node, updateAttributes, selected } = props;
   const driveId = node.attrs['data-drive-id'];
   const width = node.attrs.width;
+  const alignment = node.attrs.alignment || 'center';
   
   const { session } = useAuth();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -91,8 +92,56 @@ export default function DriveImageNode(props: NodeViewProps) {
     document.addEventListener('mouseup', onMouseUp);
   };
 
+  let alignmentClass = styles.alignCenter;
+  if (alignment === 'left') alignmentClass = styles.alignLeft;
+  if (alignment === 'right') alignmentClass = styles.alignRight;
+
   return (
-    <NodeViewWrapper className={`${styles.container} ${selected ? styles.selected : ''}`} style={{ width: width ? `${width}px` : 'auto' }}>
+    <NodeViewWrapper
+      className={`${styles.container} ${alignmentClass} ${selected ? styles.selected : ''}`}
+      style={{ width: width ? `${width}px` : (alignment === 'center' ? 'auto' : '48%') }}
+    >
+      {selected && (
+        <div className={styles.alignmentToolbar} contentEditable={false}>
+          <button
+            type="button"
+            className={`${styles.alignBtn} ${alignment === 'left' ? styles.alignBtnActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              updateAttributes({ alignment: 'left' });
+            }}
+            title="Alinhar à Esquerda (Texto ao lado)"
+          >
+            ⬅️ Esquerda
+          </button>
+          <button
+            type="button"
+            className={`${styles.alignBtn} ${alignment === 'center' ? styles.alignBtnActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              updateAttributes({ alignment: 'center' });
+            }}
+            title="Centralizar (Sem texto ao lado)"
+          >
+            ⏹️ Centro
+          </button>
+          <button
+            type="button"
+            className={`${styles.alignBtn} ${alignment === 'right' ? styles.alignBtnActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              updateAttributes({ alignment: 'right' });
+            }}
+            title="Alinhar à Direita (Texto ao lado)"
+          >
+            ➡️ Direita
+          </button>
+        </div>
+      )}
+
       {loading && (
         <div className={styles.skeleton}>
           <div className={styles.spinner} />

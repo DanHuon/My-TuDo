@@ -105,6 +105,53 @@ export default function StudyNoteEditor({
       attributes: {
         class: styles.tiptapEditor,
       },
+      handleDrop: (view, event, slice, moved) => {
+        if (!isEditing) return false;
+        const rawData = event.dataTransfer?.getData('application/json');
+        if (!rawData) return false;
+
+        try {
+          const file = JSON.parse(rawData);
+          if (!file?.id) return false;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertPos = coordinates ? coordinates.pos : view.state.selection.from;
+
+          if (file.mimeType?.startsWith('image/')) {
+            view.dispatch(
+              view.state.tr.insert(
+                insertPos,
+                view.state.schema.nodes.driveImage.create({
+                  'data-drive-id': file.id,
+                  alignment: 'center',
+                })
+              )
+            );
+          } else {
+            view.dispatch(
+              view.state.tr.insert(
+                insertPos,
+                view.state.schema.nodes.driveAttachment.create({
+                  'data-drive-id': file.id,
+                  'data-name': file.name || 'Arquivo do Drive',
+                  'data-url': file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
+                  'data-mime': file.mimeType || 'application/octet-stream',
+                })
+              )
+            );
+          }
+
+          setEditorTick(t => t + 1);
+          view.focus();
+          return true;
+        } catch (err) {
+          console.error('Erro ao processar drop no editor:', err);
+          return false;
+        }
+      },
     },
   });
 
@@ -422,14 +469,30 @@ export default function StudyNoteEditor({
         </div>
       )}
 
-      <div className={styles.editorContainer} onClick={(e) => { 
-        if (isEditing && editor) {
-          const target = e.target as HTMLElement;
-          if (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper)) {
-            editor.commands.focus('end');
+      <div
+        className={styles.editorContainer}
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes('application/json')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy';
           }
-        }
-      }}>
+        }}
+        onDrop={(e) => {
+          if (e.dataTransfer.types.includes('application/json')) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+        onClick={(e) => { 
+          if (isEditing && editor) {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains(styles.editorContainer) || target.classList.contains(styles.editorContentWrapper)) {
+              editor.commands.focus('end');
+            }
+          }
+        }}
+      >
         <EditorContent editor={editor} className={styles.editorContentWrapper} />
       </div>
 
