@@ -99,7 +99,8 @@ export default function DriveImageNode(props: NodeViewProps) {
   return (
     <NodeViewWrapper
       className={`${styles.container} ${alignmentClass} ${selected ? styles.selected : ''}`}
-      style={{ width: width ? `${width}px` : (alignment === 'center' ? 'auto' : '48%') }}
+      data-alignment={alignment}
+      style={{ width: width ? `${width}px` : (alignment === 'center' ? 'auto' : '100%') }}
     >
       {selected && (
         <div className={styles.alignmentToolbar} contentEditable={false}>

@@ -37,9 +37,9 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
   }
 
   const handleOpen = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (isPdf && driveId) {
-      e.preventDefault();
       window.dispatchEvent(
         new CustomEvent('open-pdf-lightbox', {
           detail: {
@@ -50,6 +50,8 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
           },
         })
       );
+    } else if (fileUrl && fileUrl !== '#') {
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -65,16 +67,14 @@ export default function DriveAttachmentNode(props: NodeViewProps) {
             <span className={styles.meta}>{typeLabel}</span>
           </div>
         </div>
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
           className={styles.actionBtn}
           title={isPdf ? 'Visualizar PDF no aplicativo' : 'Abrir arquivo em uma nova aba'}
           onClick={handleOpen}
         >
           {isPdf ? 'Visualizar ↗' : 'Abrir ↗'}
-        </a>
+        </button>
       </div>
     </NodeViewWrapper>
   );

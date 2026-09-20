@@ -61,7 +61,15 @@ export const DriveImageExtension = Node.create<DriveImageOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(DriveImageNode);
+    return ReactNodeViewRenderer(DriveImageNode, {
+      attrs: ({ node }) => {
+        const alignment = node.attrs.alignment || 'center';
+        return {
+          'data-alignment': alignment,
+          class: `node-driveImage align-${alignment}`,
+        };
+      },
+    });
   },
 
   addCommands() {
