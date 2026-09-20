@@ -84,7 +84,7 @@ export default function StudyNoteEditor({
       TableRow,
       TableHeader.configure({
         HTMLAttributes: {
-          style: 'border: 1px solid #ccc; padding: 4px 8px; font-weight: bold; background-color: #f3f3f3;',
+          style: 'border: 1px solid #ccc; padding: 4px 8px; font-weight: bold;',
         },
       }),
       TableCell.configure({
