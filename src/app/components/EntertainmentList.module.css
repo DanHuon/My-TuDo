@@ -283,18 +283,32 @@
 }
 
 .autoCompleteBtn {
-  background: var(--border);
-  color: var(--ink-muted);
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
+  background: var(--bg);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
   font-family: 'DM Mono', monospace;
-  font-size: 0.75rem;
-  cursor: not-allowed;
+  font-size: 0.78rem;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.autoCompleteBtn:hover:not(:disabled) {
+  background: var(--bg-card);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.autoCompleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--ink-muted);
 }
 
 .submitBtn {
