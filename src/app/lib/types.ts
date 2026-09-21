@@ -55,11 +55,16 @@ export interface Entertainment {
   posterUrl?: string | null
   coverUrl?: string | null
   synopsis?: string | null
+  releaseDate?: string | null
+  releaseYear?: string | null
   startDate?: string | null
   endDate?: string | null
   cast?: string[]
   externalProviderId?: string | null
   externalRating?: number | null
+  maxEpisodes?: number | null
+  maxSeasons?: number | null
+  metadataExtras?: Record<string, any>
   progress: {
     currentEpisode: number | null
     totalEpisodes: number | null

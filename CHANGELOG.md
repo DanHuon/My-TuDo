@@ -6,6 +6,42 @@ Este documento registra todas as atualizações e notas de versão (*release not
 
 ---
 
+## [v9.2.2] - 2026-09-21
+### 🎨 Integração Visual de Metadados (AniList & DNA de Mídia)
+- **Migração Definitiva para o AniList (GraphQL):** Fim dos erros de timeout em animes e mangás. As consultas agora utilizam a API oficial do AniList, trazendo dados riquíssimos em tempo real (capítulos, volumes, estúdios, média de notas e status de lançamento traduzido).
+- **Sub-Seções Visuais de DNA no View Mode:**
+  - **Jogos:** Selo com pontuação do Metacritic colorido dinamicamente (Verde para aclamação, Amarelo para misto, Vermelho para abaixo da média), estimativa de horas de jogo (`playtime`), classificação indicativa e lista de plataformas disponíveis.
+  - **Filmes:** Frase de efeito (Tagline) estilizada abaixo do título, duração formatada em horas e minutos (`Xh Ym`), diretor(es) e nota da crítica TMDB.
+  - **Séries:** Criador(es), emissora original (ex: HBO, Netflix, AMC), status oficial da produção e nota TMDB.
+  - **Animes e Mangás:** Estúdio responsável, formato da obra (TV, Filme, Mangá), status oficial e contagem de volumes e capítulos.
+  - **Livros:** Autores, editora, total de páginas e código ISBN.
+- **Sincronização de Tetos em 1 Clique (🔄):** Obras em andamento agora contam com o botão "Sincronizar Tetos" na tela de visualização. Ao clicar, o sistema consulta a API externa e atualiza automaticamente a quantidade de episódios ou capítulos lançados, emitindo um aviso em banner (micro-toast) sem fechar o modal.
+
+---
+
+## [v9.2.1] - 2026-09-21
+### 🛠️ Correções de Modelo de Dados & Limites Rígidos de Progresso
+- **Separação de Datas:** A data oficial de lançamento da obra agora é salva no campo dedicado `releaseYear`/`releaseDate`, preservando a data de início (`startDate`) estritamente para o momento em que você começou a consumir a obra.
+- **Tetos Máximos de Episódios/Páginas:** Implementação de `maxEpisodes` e `maxSeasons` no banco de dados. O botão de avanço rápido `+1` na tela de detalhes e no cartão agora trava automaticamente ao atingir o teto da obra.
+- **Preparação para Sincronização Dinâmica (Sync 🔄):** Estrutura desenhada para atualizar tetos de obras em lançamento com 1 clique.
+
+---
+
+## [v9.2.0] - 2026-09-21
+### 🔍 Busca Inteligente de Metadados da Web no Entretenimento
+- **Autocompletar com 1 Clique:** Novo botão "🔍 Buscar Metadados da Web" no formulário de cadastro e edição de itens de Entretenimento.
+- **Mini-Modal de Seleção Visual:** Apresenta os 5 melhores resultados com mini-pôsteres em alta resolução, título oficial, título original/autores, ano de lançamento, sinopse resumida e contagem de episódios/páginas/temporadas.
+- **Integração com Múltiplas Fontes Especializadas:**
+  - **Filmes e Séries:** Conexão nativa com a base de dados do TMDB com sinopses e títulos oficiais em português (pt-BR).
+  - **Jogos Eletrônicos:** Consulta direta à base de dados internacional do RAWG Video Games Database.
+  - **Animes e Mangás:** Consulta ao MyAnimeList (via Jikan v4) com fallback inteligente para séries do TMDB.
+  - **Livros:** Busca no Google Books com contingência automática e ilimitada na Open Library.
+- **Proteção contra Sobrecarga e Rate-Limits:** Sistema integrado de cache em memória (respostas instantâneas a buscas repetidas) e tratamento amigável de limites de API (HTTP 429).
+- **Pré-visualização Instantânea da Capa:** Visualização da imagem diretamente no formulário ao colar ou autocompletar uma URL.
+- **Refinamentos da Estante:** Indicador explícito de Temporada (`T: X | Ep: Y`) nos cartões de Séries e Animes e fechamento com a tecla `Escape`.
+
+---
+
 ## [v9.1.0] - 2026-09-20
 ### 🎬 Modo de Visualização Elegante (View Mode) no Entretenimento
 - **Novo View Mode no Duplo Clique:** Ao dar duplo clique em qualquer item da Estante (filmes, séries, animes, jogos, livros), abre-se um modal de visualização imersivo com pôster ampliado, sinopse completa e badges de status.

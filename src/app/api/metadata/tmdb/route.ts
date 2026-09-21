@@ -49,29 +49,77 @@ export async function GET(request: Request) {
     const data = await res.json()
     const rawItems = Array.isArray(data.results) ? data.results.slice(0, 5) : []
 
-    const formatted = rawItems.map((item: any) => {
-      const isTv = type === 'series' || type === 'tv'
-      const title = isTv ? (item.name || item.original_name) : (item.title || item.original_title)
-      const originalTitle = isTv ? item.original_name : item.original_title
-      const dateStr = isTv ? item.first_air_date : item.release_date
-      const year = dateStr ? dateStr.split('-')[0] : null
-      const posterUrl = item.poster_path
-        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-        : null
+    const formatted = await Promise.all(
+      rawItems.map(async (item: any) => {
+        const isTv = type === 'series' || type === 'tv'
+        const title = isTv ? (item.name || item.original_name) : (item.title || item.original_title)
+        const originalTitle = isTv ? item.original_name : item.original_title
+        const dateStr = isTv ? item.first_air_date : item.release_date
+        const year = dateStr ? dateStr.split('-')[0] : null
+        const posterUrl = item.poster_path
+          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+          : null
 
-      return {
-        id: `tmdb-${item.id}`,
-        title: title || 'Sem título',
-        originalTitle: originalTitle !== title ? originalTitle : null,
-        year,
-        startDate: dateStr || null,
-        synopsis: item.overview || null,
-        posterUrl,
-        category: isTv ? 'series' : 'movie',
-        totalEpisodes: null,
-        totalSeasons: null,
-      }
-    })
+        let metadataExtras: Record<string, any> = {}
+        let totalEpisodes: number | null = null
+        let totalSeasons: number | null = null
+
+        try {
+          const detailUrl = isTv
+            ? `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}&language=pt-BR&append_to_response=credits`
+            : `https://api.themoviedb.org/3/movie/${item.id}?api_key=${apiKey}&language=pt-BR&append_to_response=credits`
+
+          const detailRes = await fetch(detailUrl, { headers: { Accept: 'application/json' } })
+          if (detailRes.ok) {
+            const detailData = await detailRes.json()
+            if (isTv) {
+              totalEpisodes = detailData.number_of_episodes || null
+              totalSeasons = detailData.number_of_seasons || null
+              metadataExtras = {
+                status: detailData.status, // "Returning Series", "Ended", etc.
+                networks: Array.isArray(detailData.networks) ? detailData.networks.map((n: any) => n.name).join(', ') : null,
+                createdBy: Array.isArray(detailData.created_by) ? detailData.created_by.map((c: any) => c.name).join(', ') : null,
+                genres: Array.isArray(detailData.genres) ? detailData.genres.map((g: any) => g.name) : [],
+                voteAverage: detailData.vote_average || null,
+                totalEpisodes,
+                totalSeasons,
+              }
+            } else {
+              const directors = detailData.credits?.crew
+                ? detailData.credits.crew.filter((c: any) => c.job === 'Director').map((c: any) => c.name).join(', ')
+                : null
+              metadataExtras = {
+                runtime: detailData.runtime || null, // in minutes
+                directors: directors || null,
+                tagline: detailData.tagline || null,
+                genres: Array.isArray(detailData.genres) ? detailData.genres.map((g: any) => g.name) : [],
+                voteAverage: detailData.vote_average || null,
+              }
+            }
+          }
+        } catch {
+          // Fallback if enrichment fails
+        }
+
+        return {
+          id: `tmdb-${item.id}`,
+          title: title || 'Sem título',
+          originalTitle: originalTitle !== title ? originalTitle : null,
+          year,
+          releaseYear: year,
+          releaseDate: dateStr || null,
+          startDate: null,
+          synopsis: item.overview || null,
+          posterUrl,
+          category: isTv ? 'series' : 'movie',
+          totalEpisodes,
+          totalSeasons,
+          maxEpisodes: totalEpisodes,
+          maxSeasons: totalSeasons,
+          metadataExtras,
+        }
+      })
+    )
 
     return NextResponse.json({ results: formatted })
   } catch (error: any) {

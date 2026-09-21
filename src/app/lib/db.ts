@@ -440,16 +440,21 @@ export const itemToEntertainment = (item: DBItem): import('./types').Entertainme
     posterUrl: item.payload.posterUrl || null,
     coverUrl: item.payload.coverUrl || null,
     synopsis: item.payload.synopsis || null,
+    releaseDate: item.payload.releaseDate || item.payload.releaseYear || null,
+    releaseYear: item.payload.releaseYear || (item.payload.releaseDate ? item.payload.releaseDate.split('-')[0] : null),
     startDate: item.payload.startDate || null,
     endDate: item.payload.endDate || null,
     cast: item.payload.cast || [],
     externalProviderId: item.payload.externalProviderId || null,
     externalRating: item.payload.externalRating || null,
+    maxEpisodes: item.payload.maxEpisodes ?? item.payload.progress?.totalEpisodes ?? null,
+    maxSeasons: item.payload.maxSeasons ?? item.payload.progress?.totalSeasons ?? null,
+    metadataExtras: item.payload.metadataExtras || {},
     progress: item.payload.progress || {
       currentEpisode: null,
-      totalEpisodes: null,
+      totalEpisodes: item.payload.maxEpisodes ?? null,
       currentSeason: null,
-      totalSeasons: null
+      totalSeasons: item.payload.maxSeasons ?? null
     },
     rating: item.payload.rating || {
       overall: null

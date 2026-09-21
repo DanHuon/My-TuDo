@@ -46,27 +46,44 @@ export async function GET(request: Request) {
 
     const formatted = rawItems.map((item: any) => {
       const year = item.released ? item.released.split('-')[0] : null
-      const genres = Array.isArray(item.genres) ? item.genres.map((g: any) => g.name).join(', ') : ''
-      const platforms = Array.isArray(item.platforms)
-        ? item.platforms.map((p: any) => p.platform?.name).filter(Boolean).slice(0, 4).join(', ')
-        : ''
+      const platformList = Array.isArray(item.platforms)
+        ? item.platforms.map((p: any) => p.platform?.name).filter(Boolean)
+        : []
+      const genreList = Array.isArray(item.genres)
+        ? item.genres.map((g: any) => g.name).filter(Boolean)
+        : []
 
       let synopsisParts: string[] = []
-      if (genres) synopsisParts.push(`Gênero: ${genres}`)
-      if (platforms) synopsisParts.push(`Plataformas: ${platforms}`)
+      if (genreList.length > 0) synopsisParts.push(`Gênero: ${genreList.join(', ')}`)
+      if (platformList.length > 0) synopsisParts.push(`Plataformas: ${platformList.slice(0, 4).join(', ')}`)
       if (item.rating) synopsisParts.push(`Nota RAWG: ${item.rating}/5`)
+      if (item.metacritic) synopsisParts.push(`Metacritic: ${item.metacritic}`)
+
+      const metadataExtras: Record<string, any> = {
+        platforms: platformList,
+        genres: genreList,
+        metacritic: item.metacritic || null,
+        rating: item.rating || null,
+        playtime: item.playtime || null,
+        esrbRating: item.esrb_rating?.name || null,
+      }
 
       return {
         id: `rawg-${item.id}`,
         title: item.name || 'Sem título',
         originalTitle: null,
         year,
-        startDate: item.released || null,
+        releaseYear: year,
+        releaseDate: item.released || null,
+        startDate: null,
         synopsis: synopsisParts.length > 0 ? synopsisParts.join(' | ') : null,
         posterUrl: item.background_image || null,
         category: 'game',
         totalEpisodes: null,
         totalSeasons: null,
+        maxEpisodes: null,
+        maxSeasons: null,
+        metadataExtras,
       }
     })
 

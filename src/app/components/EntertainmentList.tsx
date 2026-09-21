@@ -66,7 +66,10 @@ export default function EntertainmentList() {
     e.stopPropagation() // Crucial for not triggering the card double click
     const item = items.find(i => i.id === id)
     if (!item) return
+    const ceiling = item.maxEpisodes ?? item.progress.totalEpisodes ?? null
     const current = item.progress.currentEpisode || 0
+    if (ceiling !== null && current >= ceiling) return
+
     await editEntertainment(id, {
       progress: {
         ...item.progress,
@@ -185,7 +188,7 @@ export default function EntertainmentList() {
 
       {viewingItem && (
         <EntertainmentViewModal
-          item={viewingItem}
+          item={items.find(i => i.id === viewingItem.id) || viewingItem}
           onClose={() => setViewingItem(null)}
           onEdit={(item) => {
             setViewingItem(null)
@@ -274,15 +277,21 @@ export default function EntertainmentList() {
                     </>
                   )}
                 </span>
-                {hasQuickAction(item.category) && (
-                  <button 
-                    className={styles.plusBtn} 
-                    onClick={(e) => handleIncrement(item.id, e)}
-                    title={`Adicionar +1 ${getProgressLabel(item.category)}`}
-                  >
-                    +1
-                  </button>
-                )}
+                {hasQuickAction(item.category) && (() => {
+                  const ceiling = item.maxEpisodes ?? item.progress.totalEpisodes ?? null
+                  const isMaxed = ceiling !== null && (item.progress.currentEpisode || 0) >= ceiling
+                  return (
+                    <button 
+                      className={styles.plusBtn} 
+                      onClick={(e) => handleIncrement(item.id, e)}
+                      disabled={isMaxed}
+                      style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                      title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                    >
+                      +1
+                    </button>
+                  )
+                })()}
               </div>
             </div>
           </div>

@@ -21,15 +21,20 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
   const [watchStatus, setWatchStatus] = useState<'plan'|'in_progress'|'completed'|'dropped'>(itemToEdit?.watchStatus || 'plan')
   const [posterUrl, setPosterUrl] = useState(itemToEdit?.posterUrl || '')
   
+  const [releaseYear, setReleaseYear] = useState(itemToEdit?.releaseYear || (itemToEdit?.releaseDate ? itemToEdit.releaseDate.split('-')[0] : ''))
+  const [releaseDate, setReleaseDate] = useState(itemToEdit?.releaseDate || '')
+
   const [currentProgress, setCurrentProgress] = useState(itemToEdit?.progress.currentEpisode || 0)
-  const [totalEpisodes, setTotalEpisodes] = useState<number | null>(itemToEdit?.progress.totalEpisodes || null)
+  const [maxEpisodes, setMaxEpisodes] = useState<number | null>(itemToEdit?.maxEpisodes ?? itemToEdit?.progress.totalEpisodes ?? null)
   const [currentSeason, setCurrentSeason] = useState(itemToEdit?.progress.currentSeason || 1)
-  const [totalSeasons, setTotalSeasons] = useState<number | null>(itemToEdit?.progress.totalSeasons || null)
+  const [maxSeasons, setMaxSeasons] = useState<number | null>(itemToEdit?.maxSeasons ?? itemToEdit?.progress.totalSeasons ?? null)
   
   const [startDate, setStartDate] = useState(itemToEdit?.startDate || '')
   const [endDate, setEndDate] = useState(itemToEdit?.endDate || '')
   
   const [overallRating, setOverallRating] = useState<number | ''>(itemToEdit?.rating.overall || '')
+  const [externalProviderId, setExternalProviderId] = useState<string | null>(itemToEdit?.externalProviderId || null)
+  const [metadataExtras, setMetadataExtras] = useState<Record<string, any>>(itemToEdit?.metadataExtras || {})
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
 
@@ -38,8 +43,10 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
     if (!isEditing) {
       setCurrentProgress(0)
       setCurrentSeason(1)
-      setTotalEpisodes(null)
-      setTotalSeasons(null)
+      setMaxEpisodes(null)
+      setMaxSeasons(null)
+      setMetadataExtras({})
+      setExternalProviderId(null)
     }
   }, [category, isEditing])
 
@@ -48,12 +55,23 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
     if (item.originalTitle) setOriginalTitle(item.originalTitle)
     if (item.synopsis) setSynopsis(item.synopsis)
     if (item.posterUrl) setPosterUrl(item.posterUrl)
-    if (item.startDate) setStartDate(item.startDate)
-    if (item.totalEpisodes !== undefined && item.totalEpisodes !== null) {
-      setTotalEpisodes(item.totalEpisodes)
+    if (item.id) setExternalProviderId(item.id)
+    if (item.metadataExtras) setMetadataExtras(item.metadataExtras)
+
+    // Save official API release year/date in releaseYear/releaseDate (do NOT overwrite personal startDate!)
+    const apiDate = item.releaseDate || item.startDate || ''
+    const apiYear = item.releaseYear || item.year || (apiDate ? apiDate.split('-')[0] : '')
+    if (apiYear) setReleaseYear(apiYear)
+    if (apiDate) setReleaseDate(apiDate)
+
+    const ceilingEps = item.maxEpisodes ?? item.totalEpisodes ?? null
+    const ceilingSeasons = item.maxSeasons ?? item.totalSeasons ?? null
+
+    if (ceilingEps !== null) {
+      setMaxEpisodes(ceilingEps)
     }
-    if (item.totalSeasons !== undefined && item.totalSeasons !== null) {
-      setTotalSeasons(item.totalSeasons)
+    if (ceilingSeasons !== null) {
+      setMaxSeasons(ceilingSeasons)
     }
     setIsSearchModalOpen(false)
   }
@@ -69,13 +87,19 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
       category,
       watchStatus,
       posterUrl: posterUrl.trim() || null,
+      releaseYear: releaseYear.trim() || (releaseDate ? releaseDate.split('-')[0] : null),
+      releaseDate: releaseDate || null,
       startDate: startDate || null,
       endDate: endDate || null,
+      externalProviderId: externalProviderId || itemToEdit?.externalProviderId || null,
+      maxEpisodes: maxEpisodes || null,
+      maxSeasons: maxSeasons || null,
+      metadataExtras: metadataExtras || itemToEdit?.metadataExtras || {},
       progress: {
         currentEpisode: currentProgress,
-        totalEpisodes: totalEpisodes || null,
+        totalEpisodes: maxEpisodes || null,
         currentSeason: currentSeason,
-        totalSeasons: totalSeasons || null
+        totalSeasons: maxSeasons || null
       },
       rating: { 
         ...itemToEdit?.rating,
@@ -187,7 +211,17 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Data de Início</label>
+                <label className={styles.label}>Ano / Lançamento da Obra</label>
+                <input 
+                  type="text"
+                  className={styles.input} 
+                  value={releaseYear} 
+                  onChange={e => setReleaseYear(e.target.value)} 
+                  placeholder="Ex: 2024"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Início do Consumo</label>
                 <input 
                   type="date"
                   className={styles.input} 
@@ -196,7 +230,7 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Data de Fim</label>
+                <label className={styles.label}>Fim do Consumo</label>
                 <input 
                   type="date"
                   className={styles.input} 
@@ -221,14 +255,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     />
                   </div>
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>Total Temporadas</label>
+                    <label className={styles.label}>Teto de Temporadas (Total)</label>
                     <input 
                       type="number"
                       min="1"
                       className={styles.input} 
-                      value={totalSeasons ?? ''} 
-                      onChange={e => setTotalSeasons(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
-                      placeholder="Opcional"
+                      value={maxSeasons ?? ''} 
+                      onChange={e => setMaxSeasons(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                      placeholder="Ex: 5"
                     />
                   </div>
                 </div>
@@ -245,14 +279,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     />
                   </div>
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>Total Episódios</label>
+                    <label className={styles.label}>Teto de Episódios (Total)</label>
                     <input 
                       type="number"
                       min="1"
                       className={styles.input} 
-                      value={totalEpisodes ?? ''} 
-                      onChange={e => setTotalEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
-                      placeholder="Opcional"
+                      value={maxEpisodes ?? ''} 
+                      onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                      placeholder="Ex: 24"
                     />
                   </div>
                 </div>
@@ -272,14 +306,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Total de Páginas</label>
+                  <label className={styles.label}>Total de Páginas (Teto)</label>
                   <input 
                     type="number"
                     min="1"
                     className={styles.input} 
-                    value={totalEpisodes ?? ''} 
-                    onChange={e => setTotalEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
-                    placeholder="Opcional"
+                    value={maxEpisodes ?? ''} 
+                    onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                    placeholder="Ex: 350"
                   />
                 </div>
               </div>
@@ -298,14 +332,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Total de Capítulos</label>
+                  <label className={styles.label}>Total de Capítulos (Teto)</label>
                   <input 
                     type="number"
                     min="1"
                     className={styles.input} 
-                    value={totalEpisodes ?? ''} 
-                    onChange={e => setTotalEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
-                    placeholder="Opcional"
+                    value={maxEpisodes ?? ''} 
+                    onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                    placeholder="Ex: 100"
                   />
                 </div>
               </div>
