@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { getEntertainments, editEntertainment } from '@/app/lib/db'
+import { getEntertainments, editEntertainment, deleteEntertainment } from '@/app/lib/db'
 import { Entertainment } from '@/app/lib/types'
 import EntertainmentForm from './EntertainmentForm'
+import EntertainmentViewModal from './EntertainmentViewModal'
 import styles from './EntertainmentList.module.css'
 
 type Tab = 'all' | 'series' | 'movie' | 'book' | 'game' | 'anime' | 'manga'
@@ -19,6 +20,7 @@ export default function EntertainmentList() {
   
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Entertainment | null>(null)
+  const [viewingItem, setViewingItem] = useState<Entertainment | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredAndSortedItems = items.filter(item => {
@@ -74,8 +76,7 @@ export default function EntertainmentList() {
   }
 
   const handleCardDoubleClick = (item: Entertainment) => {
-    setEditingItem(item)
-    setShowForm(true)
+    setViewingItem(item)
   }
 
   const getProgressLabel = (category: string) => {
@@ -182,6 +183,41 @@ export default function EntertainmentList() {
         </select>
       </div>
 
+      {viewingItem && (
+        <EntertainmentViewModal
+          item={viewingItem}
+          onClose={() => setViewingItem(null)}
+          onEdit={(item) => {
+            setViewingItem(null)
+            setEditingItem(item)
+            setShowForm(true)
+          }}
+          onDelete={async (id) => {
+            if (confirm('Tem certeza que deseja apagar este item?')) {
+              await deleteEntertainment(id)
+              setViewingItem(null)
+            }
+          }}
+          onUpdateProgress={async (id, newEpisode) => {
+            const item = items.find(i => i.id === id)
+            if (!item) return
+            await editEntertainment(id, {
+              progress: {
+                ...item.progress,
+                currentEpisode: newEpisode,
+              },
+            })
+            setViewingItem({
+              ...item,
+              progress: {
+                ...item.progress,
+                currentEpisode: newEpisode,
+              },
+            })
+          }}
+        />
+      )}
+
       {showForm && (
         <EntertainmentForm 
           itemToEdit={editingItem}
@@ -196,7 +232,7 @@ export default function EntertainmentList() {
             key={item.id} 
             className={styles.card} 
             onDoubleClick={() => handleCardDoubleClick(item)}
-            title="Dê um duplo clique para editar"
+            title="Dê um duplo clique para visualizar"
             style={{ cursor: 'pointer' }}
           >
             <div className={styles.statusBadge} style={{ backgroundColor: getStatusColor(item.watchStatus) }}>
