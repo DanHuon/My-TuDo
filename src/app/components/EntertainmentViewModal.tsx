@@ -78,6 +78,16 @@ export default function EntertainmentViewModal({
   const currentEp = item.progress?.currentEpisode ?? 0
   const totalEp = item.progress?.totalEpisodes
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const handleQuickIncrement = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (onUpdateProgress) {

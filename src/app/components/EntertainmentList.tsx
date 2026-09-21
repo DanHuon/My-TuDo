@@ -266,6 +266,9 @@ export default function EntertainmentList() {
                 <span className={styles.progress}>
                   {hasQuickAction(item.category) && (
                     <>
+                      {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                        <>T: {item.progress.currentSeason} | </>
+                      ) : null}
                       {getProgressLabel(item.category)}: {item.progress.currentEpisode || 0}
                       {item.progress.totalEpisodes ? ` / ${item.progress.totalEpisodes}` : ''}
                     </>
