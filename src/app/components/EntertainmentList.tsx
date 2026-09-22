@@ -243,7 +243,20 @@ export default function EntertainmentList() {
             </div>
             
             {item.posterUrl ? (
-              <img src={item.posterUrl} alt={item.title} className={styles.coverImage} loading="lazy" />
+              <div className={styles.coverContainer}>
+                <img
+                  src={item.posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.coverBlurBg}
+                />
+                <img
+                  src={item.posterUrl}
+                  alt={item.title}
+                  className={styles.coverImage}
+                  loading="lazy"
+                />
+              </div>
             ) : (
               <div className={styles.coverPlaceholder}>Sem Capa</div>
             )}
@@ -267,19 +280,35 @@ export default function EntertainmentList() {
               
               <div className={styles.footer}>
                 <span className={styles.progress}>
-                  {hasQuickAction(item.category) && (
-                    <>
-                      {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
-                        <>T: {item.progress.currentSeason} | </>
-                      ) : null}
-                      {getProgressLabel(item.category)}: {item.progress.currentEpisode || 0}
-                      {item.progress.totalEpisodes ? ` / ${item.progress.totalEpisodes}` : ''}
-                    </>
-                  )}
+                  {hasQuickAction(item.category) && (() => {
+                    const seasonNum = item.progress?.currentSeason || 1
+                    const seasonMap = item.metadataExtras?.seasonEpisodes
+                    const seasonCeiling = (item.category === 'series' && seasonMap)
+                      ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
+                      : null
+                    const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                    const curEp = item.progress?.currentEpisode || 0
+
+                    return (
+                      <>
+                        {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                          <>T: {item.progress.currentSeason} | </>
+                        ) : null}
+                        {getProgressLabel(item.category)}: {curEp}
+                        {epCeiling ? ` / ${epCeiling}` : ''}
+                      </>
+                    )
+                  })()}
                 </span>
                 {hasQuickAction(item.category) && (() => {
-                  const ceiling = item.maxEpisodes ?? item.progress.totalEpisodes ?? null
-                  const isMaxed = ceiling !== null && (item.progress.currentEpisode || 0) >= ceiling
+                  const seasonNum = item.progress?.currentSeason || 1
+                  const seasonMap = item.metadataExtras?.seasonEpisodes
+                  const seasonCeiling = (item.category === 'series' && seasonMap)
+                    ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
+                    : null
+                  const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                  const curEp = item.progress?.currentEpisode || 0
+                  const isMaxed = ceiling !== null && curEp >= ceiling
                   return (
                     <button 
                       className={styles.plusBtn} 

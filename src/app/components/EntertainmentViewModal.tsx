@@ -133,7 +133,12 @@ export default function EntertainmentViewModal({
   const categoryInfo = getCategoryInfo(item.category)
   const statusInfo = getStatusInfo(item.watchStatus)
   const currentEp = item.progress?.currentEpisode ?? 0
-  const ceiling = item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+  const currentSeason = item.progress?.currentSeason || 1
+  const seasonMap = item.metadataExtras?.seasonEpisodes
+  const seasonCeiling = (item.category === 'series' && seasonMap)
+    ? (seasonMap[currentSeason] ?? seasonMap[String(currentSeason)] ?? null)
+    : null
+  const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
   const totalEp = ceiling
   const isAtCeiling = ceiling !== null && currentEp >= ceiling
   const maxSeasons = item.maxSeasons ?? item.progress?.totalSeasons ?? null
@@ -170,27 +175,38 @@ export default function EntertainmentViewModal({
         item.title,
         item.externalProviderId
       )
+
+      const prevCeiling = item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+      const prevSeasons = item.maxSeasons ?? item.progress?.totalSeasons ?? null
+
       if (res && (res.maxEpisodes || res.maxSeasons)) {
-        await editEntertainment(item.id, {
-          maxEpisodes: res.maxEpisodes ?? item.maxEpisodes,
-          maxSeasons: res.maxSeasons ?? item.maxSeasons,
-          progress: {
-            ...item.progress,
-            totalEpisodes: res.maxEpisodes ?? item.progress?.totalEpisodes ?? null,
-            totalSeasons: res.maxSeasons ?? item.progress?.totalSeasons ?? null,
-          },
-        })
-        const unit = getProgressUnit(item.category).toLowerCase()
-        const msg = res.maxEpisodes
-          ? `Teto atualizado com sucesso: ${res.maxEpisodes} ${unit}s!`
-          : 'Informações de teto atualizadas!'
-        setToastMessage(msg)
+        const hasChanged =
+          (res.maxEpisodes && res.maxEpisodes !== prevCeiling) ||
+          (res.maxSeasons && res.maxSeasons !== prevSeasons)
+
+        if (hasChanged) {
+          const newEpisodes = res.maxEpisodes ?? item.maxEpisodes
+          const newSeasons = res.maxSeasons ?? item.maxSeasons
+          await editEntertainment(item.id, {
+            maxEpisodes: newEpisodes,
+            maxSeasons: newSeasons,
+            progress: {
+              ...item.progress,
+              totalEpisodes: newEpisodes ?? item.progress?.totalEpisodes ?? null,
+              totalSeasons: newSeasons ?? item.progress?.totalSeasons ?? null,
+            },
+          })
+          const unit = getProgressUnit(item.category).toLowerCase()
+          setToastMessage(`Teto atualizado para ${res.maxEpisodes || newEpisodes} ${unit}s!`)
+        } else {
+          setToastMessage('A obra já está na versão mais recente!')
+        }
       } else {
-        setToastMessage('Nenhum novo episódio ou capítulo detectado na API.')
+        setToastMessage('A obra já está na versão mais recente!')
       }
     } catch (err) {
       console.error('Erro ao sincronizar tetos:', err)
-      setToastMessage('Falha ao conectar com o serviço de metadados.')
+      setToastMessage('Não foi possível conectar ao serviço de metadados.')
     } finally {
       setIsSyncing(false)
       setTimeout(() => {
@@ -246,12 +262,20 @@ export default function EntertainmentViewModal({
           {/* Coluna da Capa */}
           <div className={styles.coverCol}>
             {item.posterUrl ? (
-              <img
-                src={item.posterUrl}
-                alt={item.title}
-                className={styles.posterImage}
-                loading="lazy"
-              />
+              <div className={styles.posterWrapper}>
+                <img
+                  src={item.posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.posterBlurBg}
+                />
+                <img
+                  src={item.posterUrl}
+                  alt={item.title}
+                  className={styles.posterImage}
+                  loading="lazy"
+                />
+              </div>
             ) : (
               <div className={styles.posterPlaceholder}>
                 <span className={styles.placeholderIcon}>{categoryInfo.icon}</span>

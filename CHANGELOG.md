@@ -6,6 +6,18 @@ Este documento registra todas as atualizações e notas de versão (*release not
 
 ---
 
+## [v9.2.3] - 2026-09-21
+### ✨ Polimento de Metadados, Capas e Responsividade
+- **Sinopses de Jogos Limpas:** Remoção de textos artificiais concatenados no resumo dos jogos do RAWG. A descrição agora é 100% autêntica, enquanto plataformas, notas e tempo de jogo são organizados exclusivamente nos widgets dedicados.
+- **Busca Resiliente de Filmes e Séries (TMDB):** Obras buscadas por títulos em inglês agora encontram resultados mesmo se a pesquisa em português não retornar dados imediatos.
+- **Proteção contra Erros de Cota (Google Books):** Adicionado um tempo de espera inteligente (debounce de 850ms) ao digitar no campo de busca, prevenindo bloqueios por excesso de requisições (erro 429).
+- **Temporadas com Contagem Precisa de Episódios:** Em séries, a quantidade de episódios exibida agora respeita o teto da temporada que você está assistindo (ex: Temporada 3 com 13 episódios), e o botão `+1` trava no teto correto da temporada.
+- **Automação ao Concluir Obras:** Ao alterar o status de qualquer obra para "Concluído", os episódios ou páginas são automaticamente preenchidos com o valor máximo disponível.
+- **Confirmação Visual no Botão de Sincronização (🔄):** O botão de sincronizar tetos agora sempre emite um aviso claro: se houver novidades, informa o novo total; se não houver, confirma que a obra já está em dia.
+- **Capas com Efeito Dual Layer Blur:** Fim das capas cortadas em livros ou jogos horizontais. O aplicativo agora utiliza uma camada de fundo desfocada combinada com a imagem principal inteira e sem distorções em primeiro plano.
+
+---
+
 ## [v9.2.2] - 2026-09-21
 ### 🎨 Integração Visual de Metadados (AniList & DNA de Mídia)
 - **Migração Definitiva para o AniList (GraphQL):** Fim dos erros de timeout em animes e mangás. As consultas agora utilizam a API oficial do AniList, trazendo dados riquíssimos em tempo real (capítulos, volumes, estúdios, média de notas e status de lançamento traduzido).

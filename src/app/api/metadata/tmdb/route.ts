@@ -47,7 +47,23 @@ export async function GET(request: Request) {
     }
 
     const data = await res.json()
-    const rawItems = Array.isArray(data.results) ? data.results.slice(0, 5) : []
+    let rawItems = Array.isArray(data.results) ? data.results.slice(0, 5) : []
+
+    // Fallback if pt-BR search yielded no results (e.g. searching by original English title or untranslated title)
+    if (rawItems.length === 0) {
+      try {
+        const fallbackUrl = `${endpoint}?api_key=${apiKey}&query=${encodeURIComponent(query.trim())}&page=1&include_adult=false`
+        const fallbackRes = await fetch(fallbackUrl, { headers: { Accept: 'application/json' } })
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json()
+          if (Array.isArray(fallbackData.results) && fallbackData.results.length > 0) {
+            rawItems = fallbackData.results.slice(0, 5)
+          }
+        }
+      } catch {
+        // Continue with empty rawItems
+      }
+    }
 
     const formatted = await Promise.all(
       rawItems.map(async (item: any) => {
@@ -63,6 +79,9 @@ export async function GET(request: Request) {
         let metadataExtras: Record<string, any> = {}
         let totalEpisodes: number | null = null
         let totalSeasons: number | null = null
+        let seasonEpisodes: Record<number, number> = {}
+        let season1Episodes: number | null = null
+        let cleanOverview: string | null = item.overview || null
 
         try {
           const detailUrl = isTv
@@ -72,9 +91,25 @@ export async function GET(request: Request) {
           const detailRes = await fetch(detailUrl, { headers: { Accept: 'application/json' } })
           if (detailRes.ok) {
             const detailData = await detailRes.json()
+            if (detailData.overview) {
+              cleanOverview = detailData.overview
+            }
+
             if (isTv) {
               totalEpisodes = detailData.number_of_episodes || null
               totalSeasons = detailData.number_of_seasons || null
+
+              if (Array.isArray(detailData.seasons)) {
+                detailData.seasons.forEach((s: any) => {
+                  if (s.season_number !== undefined && s.episode_count !== undefined) {
+                    seasonEpisodes[s.season_number] = s.episode_count
+                    if (s.season_number === 1) {
+                      season1Episodes = s.episode_count
+                    }
+                  }
+                })
+              }
+
               metadataExtras = {
                 status: detailData.status, // "Returning Series", "Ended", etc.
                 networks: Array.isArray(detailData.networks) ? detailData.networks.map((n: any) => n.name).join(', ') : null,
@@ -83,6 +118,7 @@ export async function GET(request: Request) {
                 voteAverage: detailData.vote_average || null,
                 totalEpisodes,
                 totalSeasons,
+                seasonEpisodes,
               }
             } else {
               const directors = detailData.credits?.crew
@@ -101,6 +137,22 @@ export async function GET(request: Request) {
           // Fallback if enrichment fails
         }
 
+        // If Portuguese overview is empty, fallback to English overview
+        if (!cleanOverview) {
+          try {
+            const enUrl = isTv
+              ? `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}&language=en-US`
+              : `https://api.themoviedb.org/3/movie/${item.id}?api_key=${apiKey}&language=en-US`
+            const enRes = await fetch(enUrl, { headers: { Accept: 'application/json' } })
+            if (enRes.ok) {
+              const enData = await enRes.json()
+              cleanOverview = enData.overview || null
+            }
+          } catch {
+            // ignore
+          }
+        }
+
         return {
           id: `tmdb-${item.id}`,
           title: title || 'Sem título',
@@ -109,12 +161,12 @@ export async function GET(request: Request) {
           releaseYear: year,
           releaseDate: dateStr || null,
           startDate: null,
-          synopsis: item.overview || null,
+          synopsis: cleanOverview,
           posterUrl,
           category: isTv ? 'series' : 'movie',
           totalEpisodes,
           totalSeasons,
-          maxEpisodes: totalEpisodes,
+          maxEpisodes: isTv ? (season1Episodes || totalEpisodes) : totalEpisodes,
           maxSeasons: totalSeasons,
           metadataExtras,
         }

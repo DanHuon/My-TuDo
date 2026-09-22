@@ -43,6 +43,8 @@ export default function MetadataSearchModal({
   const [hasSearched, setHasSearched] = useState(false)
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({})
 
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('')
+
   const performSearch = useCallback(
     async (searchTerm: string) => {
       const clean = searchTerm.trim()
@@ -75,6 +77,7 @@ export default function MetadataSearchModal({
   useEffect(() => {
     if (isOpen) {
       setQuery(initialQuery)
+      setLastSearchedQuery(initialQuery.trim())
       setBrokenImages({})
       if (initialQuery.trim()) {
         performSearch(initialQuery)
@@ -85,6 +88,27 @@ export default function MetadataSearchModal({
       }
     }
   }, [isOpen, initialQuery, performSearch])
+
+  // Debounce search while user is actively typing (850ms debounce)
+  useEffect(() => {
+    if (!isOpen) return
+    const clean = query.trim()
+    if (!clean) {
+      setItems([])
+      setHasSearched(false)
+      setError(null)
+      return
+    }
+
+    if (clean === lastSearchedQuery) return
+
+    const timer = setTimeout(() => {
+      setLastSearchedQuery(clean)
+      performSearch(clean)
+    }, 850)
+
+    return () => clearTimeout(timer)
+  }, [query, isOpen, lastSearchedQuery, performSearch])
 
   // Close on Escape key
   useEffect(() => {
@@ -102,7 +126,10 @@ export default function MetadataSearchModal({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    performSearch(query)
+    const clean = query.trim()
+    if (!clean) return
+    setLastSearchedQuery(clean)
+    performSearch(clean)
   }
 
   const handleImageError = (id: string) => {

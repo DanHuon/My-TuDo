@@ -201,7 +201,8 @@ export async function searchMetadata(
       }
     } else if (category === 'book') {
       try {
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5`
+        const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
+        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5${googleApiKey ? `&key=${googleApiKey}` : ''}`
         const res = await fetch(url)
         if (res.ok) {
           const data = await res.json()

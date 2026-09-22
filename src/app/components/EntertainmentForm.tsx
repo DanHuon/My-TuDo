@@ -50,6 +50,37 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
     }
   }, [category, isEditing])
 
+  // Adjust maxEpisodes when currentSeason changes for a series with seasonEpisodes map
+  useEffect(() => {
+    if (category === 'series' && metadataExtras?.seasonEpisodes) {
+      const seasonNum = currentSeason || 1
+      const seasonEps = metadataExtras.seasonEpisodes[seasonNum] ?? metadataExtras.seasonEpisodes[String(seasonNum)]
+      if (seasonEps) {
+        setMaxEpisodes(seasonEps)
+      }
+    }
+  }, [currentSeason, category, metadataExtras])
+
+  // Automação: se o status for alterado para 'completed', preenche automaticamente o progresso com o teto máximo
+  useEffect(() => {
+    if (watchStatus === 'completed') {
+      if (category === 'series') {
+        const finalSeason = maxSeasons || currentSeason || 1
+        setCurrentSeason(finalSeason)
+        const seasonMap = metadataExtras?.seasonEpisodes
+        const finalSeasonEps = seasonMap ? (seasonMap[finalSeason] ?? seasonMap[String(finalSeason)]) : null
+        const finalEps = finalSeasonEps ?? maxEpisodes
+        if (finalEps !== null && finalEps > 0) {
+          setCurrentProgress(finalEps)
+        }
+      } else {
+        if (maxEpisodes !== null && maxEpisodes > 0) {
+          setCurrentProgress(maxEpisodes)
+        }
+      }
+    }
+  }, [watchStatus, maxEpisodes, maxSeasons, category, metadataExtras])
+
   const handleSelectMetadata = (item: MetadataItem) => {
     setTitle(item.title)
     if (item.originalTitle) setOriginalTitle(item.originalTitle)
@@ -279,7 +310,9 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     />
                   </div>
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>Teto de Episódios (Total)</label>
+                    <label className={styles.label}>
+                      {category === 'series' ? `Teto de Episódios (Temporada ${currentSeason || 1})` : 'Teto de Episódios (Total)'}
+                    </label>
                     <input 
                       type="number"
                       min="1"

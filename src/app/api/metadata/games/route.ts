@@ -44,48 +44,58 @@ export async function GET(request: Request) {
     const data = await res.json()
     const rawItems = Array.isArray(data.results) ? data.results.slice(0, 5) : []
 
-    const formatted = rawItems.map((item: any) => {
-      const year = item.released ? item.released.split('-')[0] : null
-      const platformList = Array.isArray(item.platforms)
-        ? item.platforms.map((p: any) => p.platform?.name).filter(Boolean)
-        : []
-      const genreList = Array.isArray(item.genres)
-        ? item.genres.map((g: any) => g.name).filter(Boolean)
-        : []
+    const formatted = await Promise.all(
+      rawItems.map(async (item: any) => {
+        const year = item.released ? item.released.split('-')[0] : null
+        const platformList = Array.isArray(item.platforms)
+          ? item.platforms.map((p: any) => p.platform?.name).filter(Boolean)
+          : []
+        const genreList = Array.isArray(item.genres)
+          ? item.genres.map((g: any) => g.name).filter(Boolean)
+          : []
 
-      let synopsisParts: string[] = []
-      if (genreList.length > 0) synopsisParts.push(`Gênero: ${genreList.join(', ')}`)
-      if (platformList.length > 0) synopsisParts.push(`Plataformas: ${platformList.slice(0, 4).join(', ')}`)
-      if (item.rating) synopsisParts.push(`Nota RAWG: ${item.rating}/5`)
-      if (item.metacritic) synopsisParts.push(`Metacritic: ${item.metacritic}`)
+        let cleanSynopsis: string | null = null
+        try {
+          const detailRes = await fetch(
+            `https://api.rawg.io/api/games/${item.id}?key=${apiKey}`,
+            { headers: { Accept: 'application/json' } }
+          )
+          if (detailRes.ok) {
+            const detailData = await detailRes.json()
+            cleanSynopsis = detailData.description_raw || detailData.description || null
+          }
+        } catch {
+          // Fallback if detail fetch fails
+        }
 
-      const metadataExtras: Record<string, any> = {
-        platforms: platformList,
-        genres: genreList,
-        metacritic: item.metacritic || null,
-        rating: item.rating || null,
-        playtime: item.playtime || null,
-        esrbRating: item.esrb_rating?.name || null,
-      }
+        const metadataExtras: Record<string, any> = {
+          platforms: platformList,
+          genres: genreList,
+          metacritic: item.metacritic || null,
+          rating: item.rating || null,
+          playtime: item.playtime || null,
+          esrbRating: item.esrb_rating?.name || null,
+        }
 
-      return {
-        id: `rawg-${item.id}`,
-        title: item.name || 'Sem título',
-        originalTitle: null,
-        year,
-        releaseYear: year,
-        releaseDate: item.released || null,
-        startDate: null,
-        synopsis: synopsisParts.length > 0 ? synopsisParts.join(' | ') : null,
-        posterUrl: item.background_image || null,
-        category: 'game',
-        totalEpisodes: null,
-        totalSeasons: null,
-        maxEpisodes: null,
-        maxSeasons: null,
-        metadataExtras,
-      }
-    })
+        return {
+          id: `rawg-${item.id}`,
+          title: item.name || 'Sem título',
+          originalTitle: null,
+          year,
+          releaseYear: year,
+          releaseDate: item.released || null,
+          startDate: null,
+          synopsis: cleanSynopsis,
+          posterUrl: item.background_image || null,
+          category: 'game',
+          totalEpisodes: null,
+          totalSeasons: null,
+          maxEpisodes: null,
+          maxSeasons: null,
+          metadataExtras,
+        }
+      })
+    )
 
     return NextResponse.json({ results: formatted })
   } catch (error: any) {
