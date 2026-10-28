@@ -165,6 +165,18 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
               <button type="button" onClick={onClose} className={styles.plusBtn}>✕</button>
             </div>
 
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Categoria</label>
+              <select className={styles.select} value={category} onChange={e => setCategory(e.target.value as any)}>
+                <option value="movie">Filme</option>
+                <option value="series">Série</option>
+                <option value="anime">Anime</option>
+                <option value="manga">Mangá</option>
+                <option value="book">Livro</option>
+                <option value="game">Jogo</option>
+              </select>
+            </div>
+
             <button 
               type="button" 
               className={styles.autoCompleteBtn}
@@ -203,18 +215,6 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
             </div>
 
             <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Categoria</label>
-                <select className={styles.select} value={category} onChange={e => setCategory(e.target.value as any)}>
-                  <option value="movie">Filme</option>
-                  <option value="series">Série</option>
-                  <option value="anime">Anime</option>
-                  <option value="manga">Mangá</option>
-                  <option value="book">Livro</option>
-                  <option value="game">Jogo</option>
-                </select>
-              </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.label}>Status</label>
                 <select className={styles.select} value={watchStatus} onChange={e => setWatchStatus(e.target.value as any)}>

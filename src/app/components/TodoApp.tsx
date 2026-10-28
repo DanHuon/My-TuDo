@@ -339,14 +339,6 @@ export default function TodoApp() {
           <button onClick={toast.onUndo} className={styles.toastUndoBtn}>Desfazer</button>
         </div>
       )}
-
-      <footer className={`${styles.footer} ${(activeModule === 'calendar' || activeModule === 'studies') ? styles.hideMobileCalendar : ''}`}>
-        <div className={styles.footerRule} />
-        <div className={styles.footerInner}>
-          <span>Tarefas - {new Date().getFullYear()}</span>
-          <span>Dexie (IndexedDB) | Next.js (Local-First)</span>
-        </div>
-      </footer>
       </div>
     </div>
   )

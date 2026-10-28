@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { getEntertainments, editEntertainment, deleteEntertainment } from '@/app/lib/db'
 import { Entertainment } from '@/app/lib/types'
@@ -11,17 +11,31 @@ import styles from './EntertainmentList.module.css'
 type Tab = 'all' | 'series' | 'movie' | 'book' | 'game' | 'anime' | 'manga'
 type StatusTab = 'all' | 'plan' | 'in_progress' | 'completed' | 'dropped'
 type SortOption = 'alphaAsc' | 'alphaDesc' | 'createdDesc' | 'createdAsc' | 'updatedDesc' | 'updatedAsc' | 'ratingDesc' | 'ratingAsc' | 'startDesc' | 'startAsc' | 'endDesc' | 'endAsc'
+type ViewMode = 'grid' | 'compact' | 'list'
 
 export default function EntertainmentList() {
   const items = useLiveQuery(() => getEntertainments()) || []
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [statusTab, setStatusTab] = useState<StatusTab>('all')
   const [sortBy, setSortBy] = useState<SortOption>('updatedDesc')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Entertainment | null>(null)
   const [viewingItem, setViewingItem] = useState<Entertainment | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('mytudo_entertainment_view_mode')
+    if (savedMode === 'grid' || savedMode === 'compact' || savedMode === 'list') {
+      setViewMode(savedMode)
+    }
+  }, [])
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode)
+    localStorage.setItem('mytudo_entertainment_view_mode', mode)
+  }
 
   const filteredAndSortedItems = items.filter(item => {
     // 1. Tab Filter
@@ -90,10 +104,10 @@ export default function EntertainmentList() {
 
   const getStatusLabel = (status: string) => {
     switch(status) {
-      case 'plan': return 'Plan'
-      case 'in_progress': return 'In Progress'
-      case 'completed': return 'Completed'
-      case 'dropped': return 'Dropped'
+      case 'plan': return 'Planejado'
+      case 'in_progress': return 'Em Andamento'
+      case 'completed': return 'Concluído'
+      case 'dropped': return 'Dropado'
       default: return status
     }
   }
@@ -157,6 +171,37 @@ export default function EntertainmentList() {
           ))}
         </div>
         
+        {/* Alternador de Visualização Estilo Windows Explorer */}
+        <div className={styles.viewModeSwitcher} role="group" aria-label="Modo de visualização">
+          <button
+            type="button"
+            className={`${styles.viewModeBtn} ${viewMode === 'grid' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => handleViewModeChange('grid')}
+            title="Cards Grandes"
+            aria-label="Cards Grandes"
+          >
+            ⊞ Cards
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewModeBtn} ${viewMode === 'compact' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => handleViewModeChange('compact')}
+            title="Ícones Médios / Compactos"
+            aria-label="Ícones Médios / Compactos"
+          >
+            㗊 Compacto
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewModeBtn} ${viewMode === 'list' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => handleViewModeChange('list')}
+            title="Lista / Detalhes"
+            aria-label="Lista / Detalhes"
+          >
+            ☰ Lista
+          </button>
+        </div>
+
         <select 
           value={sortBy} 
           onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -229,103 +274,282 @@ export default function EntertainmentList() {
         />
       )}
 
-      <div className={styles.grid}>
-        {filteredAndSortedItems.map(item => (
-          <div 
-            key={item.id} 
-            className={styles.card} 
-            onDoubleClick={() => handleCardDoubleClick(item)}
-            title="Dê um duplo clique para visualizar"
-            style={{ cursor: 'pointer' }}
-          >
-            <div className={styles.statusBadge} style={{ backgroundColor: getStatusColor(item.watchStatus) }}>
-              {getStatusLabel(item.watchStatus)}
-            </div>
-            
-            {item.posterUrl ? (
-              <div className={styles.coverContainer}>
-                <img
-                  src={item.posterUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className={styles.coverBlurBg}
-                />
-                <img
-                  src={item.posterUrl}
-                  alt={item.title}
-                  className={styles.coverImage}
-                  loading="lazy"
-                />
+      {/* 1. MODO CARDS GRANDES */}
+      {viewMode === 'grid' && (
+        <div className={styles.grid}>
+          {filteredAndSortedItems.map(item => (
+            <div 
+              key={item.id} 
+              className={styles.card} 
+              onDoubleClick={() => handleCardDoubleClick(item)}
+              title="Dê um duplo clique para visualizar"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className={styles.statusBadge} style={{ backgroundColor: getStatusColor(item.watchStatus) }}>
+                {getStatusLabel(item.watchStatus)}
               </div>
-            ) : (
-              <div className={styles.coverPlaceholder}>Sem Capa</div>
-            )}
-
-            <div className={styles.info}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h4 className={styles.cardTitle} style={{ flex: 1 }}>{item.title}</h4>
-                {item.rating?.overall !== null && item.rating?.overall !== undefined && (
-                  <span style={{ 
-                    fontFamily: "'DM Mono', monospace", 
-                    fontSize: '0.8rem', 
-                    fontWeight: 'bold', 
-                    color: 'var(--accent)',
-                    marginLeft: '0.5rem'
-                  }}>
-                    ★ {item.rating.overall}
-                  </span>
-                )}
-              </div>
-              <span className={styles.category}>{item.category}</span>
               
-              <div className={styles.footer}>
-                <span className={styles.progress}>
+              {item.posterUrl ? (
+                <div className={styles.coverContainer}>
+                  <img
+                    src={item.posterUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className={styles.coverBlurBg}
+                  />
+                  <img
+                    src={item.posterUrl}
+                    alt={item.title}
+                    className={styles.coverImage}
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div className={styles.coverPlaceholder}>Sem Capa</div>
+              )}
+
+              <div className={styles.info}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h4 className={styles.cardTitle} style={{ flex: 1 }}>{item.title}</h4>
+                  {item.rating?.overall !== null && item.rating?.overall !== undefined && (
+                    <span style={{ 
+                      fontFamily: "'DM Mono', monospace", 
+                      fontSize: '0.8rem', 
+                      fontWeight: 'bold', 
+                      color: 'var(--accent)',
+                      marginLeft: '0.5rem'
+                    }}>
+                      ★ {item.rating.overall}
+                    </span>
+                  )}
+                </div>
+                <span className={styles.category}>{item.category}</span>
+                
+                <div className={styles.footer}>
+                  <span className={styles.progress}>
+                    {hasQuickAction(item.category) && (() => {
+                      const seasonNum = item.progress?.currentSeason || 1
+                      const seasonMap = item.metadataExtras?.seasonEpisodes
+                      const seasonCeiling = (item.category === 'series' && seasonMap)
+                        ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
+                        : null
+                      const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                      const curEp = item.progress?.currentEpisode || 0
+
+                      return (
+                        <>
+                          {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                            <>T: {item.progress.currentSeason} | </>
+                          ) : null}
+                          {getProgressLabel(item.category)}: {curEp}
+                          {epCeiling ? ` / ${epCeiling}` : ''}
+                        </>
+                      )
+                    })()}
+                  </span>
                   {hasQuickAction(item.category) && (() => {
                     const seasonNum = item.progress?.currentSeason || 1
                     const seasonMap = item.metadataExtras?.seasonEpisodes
                     const seasonCeiling = (item.category === 'series' && seasonMap)
                       ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
                       : null
-                    const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                    const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
                     const curEp = item.progress?.currentEpisode || 0
-
+                    const isMaxed = ceiling !== null && curEp >= ceiling
                     return (
-                      <>
-                        {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
-                          <>T: {item.progress.currentSeason} | </>
-                        ) : null}
-                        {getProgressLabel(item.category)}: {curEp}
-                        {epCeiling ? ` / ${epCeiling}` : ''}
-                      </>
+                      <button 
+                        className={styles.plusBtn} 
+                        onClick={(e) => handleIncrement(item.id, e)}
+                        disabled={isMaxed}
+                        style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                      >
+                        +1
+                      </button>
                     )
                   })()}
-                </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 2. MODO ÍCONES MÉDIOS / COMPACTOS */}
+      {viewMode === 'compact' && (
+        <div className={styles.compactGrid}>
+          {filteredAndSortedItems.map(item => (
+            <div 
+              key={item.id} 
+              className={styles.compactCard} 
+              onDoubleClick={() => handleCardDoubleClick(item)}
+              title="Dê um duplo clique para visualizar"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className={styles.statusBadge} style={{ backgroundColor: getStatusColor(item.watchStatus), fontSize: '0.55rem', padding: '2px 4px' }}>
+                {getStatusLabel(item.watchStatus)}
+              </div>
+              
+              {item.posterUrl ? (
+                <div className={styles.compactCoverContainer}>
+                  <img
+                    src={item.posterUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className={styles.coverBlurBg}
+                  />
+                  <img
+                    src={item.posterUrl}
+                    alt={item.title}
+                    className={styles.coverImage}
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div className={styles.compactCoverPlaceholder}>Sem Capa</div>
+              )}
+
+              <div className={styles.compactInfo}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h4 className={styles.compactCardTitle} title={item.title}>{item.title}</h4>
+                  {item.rating?.overall !== null && item.rating?.overall !== undefined && (
+                    <span style={{ 
+                      fontFamily: "'DM Mono', monospace", 
+                      fontSize: '0.7rem', 
+                      fontWeight: 'bold', 
+                      color: 'var(--accent)',
+                      marginLeft: '0.25rem'
+                    }}>
+                      ★{item.rating.overall}
+                    </span>
+                  )}
+                </div>
+                <span className={styles.category}>{item.category}</span>
+                
+                <div className={styles.footer} style={{ paddingTop: '0.35rem' }}>
+                  <span className={styles.progress} style={{ fontSize: '0.7rem' }}>
+                    {hasQuickAction(item.category) && (() => {
+                      const seasonNum = item.progress?.currentSeason || 1
+                      const seasonMap = item.metadataExtras?.seasonEpisodes
+                      const seasonCeiling = (item.category === 'series' && seasonMap)
+                        ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
+                        : null
+                      const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                      const curEp = item.progress?.currentEpisode || 0
+
+                      return (
+                        <>
+                          {curEp}{epCeiling ? `/${epCeiling}` : ''}
+                        </>
+                      )
+                    })()}
+                  </span>
+                  {hasQuickAction(item.category) && (() => {
+                    const seasonNum = item.progress?.currentSeason || 1
+                    const seasonMap = item.metadataExtras?.seasonEpisodes
+                    const seasonCeiling = (item.category === 'series' && seasonMap)
+                      ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
+                      : null
+                    const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                    const curEp = item.progress?.currentEpisode || 0
+                    const isMaxed = ceiling !== null && curEp >= ceiling
+                    return (
+                      <button 
+                        className={styles.plusBtn} 
+                        onClick={(e) => handleIncrement(item.id, e)}
+                        disabled={isMaxed}
+                        style={{ width: '20px', height: '20px', fontSize: '0.7rem', ...(isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : {}) }}
+                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                      >
+                        +1
+                      </button>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 3. MODO LISTA / DETALHES */}
+      {viewMode === 'list' && (
+        <div className={styles.listView}>
+          {filteredAndSortedItems.map(item => (
+            <div 
+              key={item.id} 
+              className={styles.listRow} 
+              onDoubleClick={() => handleCardDoubleClick(item)}
+              title="Dê um duplo clique para visualizar detalhes"
+            >
+              <div className={styles.listThumb}>
+                {item.posterUrl ? (
+                  <img src={item.posterUrl} alt={item.title} className={styles.listThumbImg} loading="lazy" />
+                ) : (
+                  <span className={styles.listThumbFallback}>🎬</span>
+                )}
+              </div>
+
+              <div className={styles.listMainInfo}>
+                <div className={styles.listTitleRow}>
+                  <span className={styles.listTitle}>{item.title}</span>
+                  {item.rating?.overall !== null && item.rating?.overall !== undefined && (
+                    <span className={styles.listRating}>★ {item.rating.overall}</span>
+                  )}
+                </div>
+                <div className={styles.listSubRow}>
+                  <span className={styles.listCategory}>{item.category}</span>
+                  {(item.releaseYear || item.releaseDate) && (
+                    <span className={styles.listYear}>• {item.releaseYear || item.releaseDate?.split('-')[0]}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.listStatusBadge} style={{ backgroundColor: getStatusColor(item.watchStatus) }}>
+                {getStatusLabel(item.watchStatus)}
+              </div>
+
+              <div className={styles.listProgressSection}>
                 {hasQuickAction(item.category) && (() => {
                   const seasonNum = item.progress?.currentSeason || 1
                   const seasonMap = item.metadataExtras?.seasonEpisodes
                   const seasonCeiling = (item.category === 'series' && seasonMap)
                     ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
                     : null
-                  const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+                  const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
                   const curEp = item.progress?.currentEpisode || 0
-                  const isMaxed = ceiling !== null && curEp >= ceiling
+                  const isMaxed = ceilingTarget(item, seasonCeiling)
+
+                  function ceilingTarget(it: Entertainment, sCeiling: number | null) {
+                    const c = sCeiling ?? it.maxEpisodes ?? it.progress?.totalEpisodes ?? null
+                    return c !== null && (it.progress?.currentEpisode || 0) >= c
+                  }
+
                   return (
-                    <button 
-                      className={styles.plusBtn} 
-                      onClick={(e) => handleIncrement(item.id, e)}
-                      disabled={isMaxed}
-                      style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
-                      title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
-                    >
-                      +1
-                    </button>
+                    <div className={styles.listProgressRow}>
+                      <span className={styles.listProgressText}>
+                        {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                          `T${item.progress.currentSeason} · `
+                        ) : ''}
+                        {getProgressLabel(item.category)}: {curEp}{epCeiling ? ` / ${epCeiling}` : ''}
+                      </span>
+                      <button 
+                        className={styles.plusBtn} 
+                        onClick={(e) => handleIncrement(item.id, e)}
+                        disabled={isMaxed}
+                        style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                      >
+                        +1
+                      </button>
+                    </div>
                   )
                 })()}
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

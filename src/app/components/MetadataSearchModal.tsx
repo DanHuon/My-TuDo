@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { searchMetadata, MetadataItem } from '@/app/lib/metadataService'
+import { searchMetadata, fetchGameDetails, MetadataItem } from '@/app/lib/metadataService'
 import styles from './MetadataSearchModal.module.css'
 
 interface Props {
@@ -42,6 +42,7 @@ export default function MetadataSearchModal({
   const [isFromCache, setIsFromCache] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({})
+  const [selectingGameId, setSelectingGameId] = useState<string | null>(null)
 
   const [lastSearchedQuery, setLastSearchedQuery] = useState('')
 
@@ -79,6 +80,7 @@ export default function MetadataSearchModal({
       setQuery(initialQuery)
       setLastSearchedQuery(initialQuery.trim())
       setBrokenImages({})
+      setSelectingGameId(null)
       if (initialQuery.trim()) {
         performSearch(initialQuery)
       } else {
@@ -134,6 +136,36 @@ export default function MetadataSearchModal({
 
   const handleImageError = (id: string) => {
     setBrokenImages((prev) => ({ ...prev, [id]: true }))
+  }
+
+  // Lazy Fetching: fetch detailed description on selection for games (SEC-02)
+  const handleItemSelect = async (item: MetadataItem) => {
+    if (item.category === 'game' && item.id.startsWith('rawg-')) {
+      setSelectingGameId(item.id)
+      try {
+        const details = await fetchGameDetails(item.id)
+        if (details) {
+          const enriched: MetadataItem = {
+            ...item,
+            synopsis: details.synopsis || item.synopsis,
+            metadataExtras: {
+              ...item.metadataExtras,
+              developers: details.developers,
+              publishers: details.publishers,
+              ...(details.playtime ? { playtime: details.playtime } : {}),
+              ...(details.metacritic ? { metacritic: details.metacritic } : {}),
+            },
+          }
+          onSelect(enriched)
+          return
+        }
+      } catch (err) {
+        console.error('Lazy fetch failed for game:', err)
+      } finally {
+        setSelectingGameId(null)
+      }
+    }
+    onSelect(item)
   }
 
   return (
@@ -203,19 +235,21 @@ export default function MetadataSearchModal({
           {!isLoading && items.length > 0 && (
             items.map((item) => {
               const hasPoster = item.posterUrl && !brokenImages[item.id]
+              const isItemLoading = selectingGameId === item.id
 
               return (
                 <div
                   key={item.id}
                   className={styles.resultCard}
-                  onClick={() => onSelect(item)}
+                  onClick={() => !isItemLoading && handleItemSelect(item)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onSelect(item)
+                    if ((e.key === 'Enter' || e.key === ' ') && !isItemLoading) {
+                      handleItemSelect(item)
                     }
                   }}
+                  style={isItemLoading ? { opacity: 0.7, pointerEvents: 'none' } : undefined}
                 >
                   {/* Poster */}
                   <div className={styles.posterWrapper}>
@@ -275,15 +309,27 @@ export default function MetadataSearchModal({
                   </div>
 
                   {/* Select button */}
-                  <div className={styles.selectIndicator}>Selecionar</div>
+                  <div className={styles.selectIndicator}>
+                    {isItemLoading ? 'Carregando...' : 'Selecionar'}
+                  </div>
                 </div>
               )
             })
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer with Legal ToS Attributions (TOS-01) */}
         <div className={styles.footer}>
+          <div className={styles.tosAttribution}>
+            <span>Dados:&nbsp;</span>
+            <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>
+            <span>•</span>
+            <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG.io</a>
+            <span>•</span>
+            <a href="https://anilist.co" target="_blank" rel="noopener noreferrer">AniList</a>
+            <span>•</span>
+            <span>Google Books</span>
+          </div>
           <button type="button" onClick={onClose} className={styles.cancelBtn}>
             Fechar
           </button>

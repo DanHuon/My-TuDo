@@ -22,9 +22,14 @@ dist/
 .env.test.local
 .env.production.local
 
-# Internal AI planning / Context (Excluded per user request)
+# Internal AI planning / Context / Skills (Excluded per user request)
 Controle/
 Requisitos/
+.agents/
+
+# TypeScript build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Debug logs
 npm-debug.log*

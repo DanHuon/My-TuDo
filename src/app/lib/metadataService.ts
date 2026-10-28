@@ -201,8 +201,8 @@ export async function searchMetadata(
       }
     } else if (category === 'book') {
       try {
-        const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5${googleApiKey ? `&key=${googleApiKey}` : ''}`
+        // SEC-01 Fix: Never inject NEXT_PUBLIC_GOOGLE_API_KEY into Google Books (restricted to Picker API only)
+        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5`
         const res = await fetch(url)
         if (res.ok) {
           const data = await res.json()
@@ -303,6 +303,37 @@ export async function searchMetadata(
   } catch (err: any) {
     console.error('Metadata search exception:', err)
     return { items: [], fromCache: false, error: 'Falha de conexão ao buscar metadados.' }
+  }
+}
+
+/**
+ * On-demand detail fetch for a single game (RAWG Lazy Fetching).
+ * Reduces monthly quota consumption from 6 requests to 2 per search.
+ */
+export async function fetchGameDetails(gameId: string | number): Promise<{
+  synopsis: string | null
+  developers: string[]
+  publishers: string[]
+  metacritic: number | null
+  playtime: number | null
+} | null> {
+  try {
+    const cleanId = String(gameId).replace('rawg-', '')
+    const res = await fetch(`/api/metadata/games?id=${encodeURIComponent(cleanId)}`)
+    if (res.ok) {
+      const data = await res.json()
+      return {
+        synopsis: cleanHtmlDescription(data.synopsis),
+        developers: data.developers || [],
+        publishers: data.publishers || [],
+        metacritic: data.metacritic || null,
+        playtime: data.playtime || null,
+      }
+    }
+    return null
+  } catch (err) {
+    console.error('fetchGameDetails error:', err)
+    return null
   }
 }
 

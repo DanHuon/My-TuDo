@@ -243,7 +243,6 @@ export default function EntertainmentViewModal({
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         {/* Cabeçalho */}
         <header className={styles.header}>
-          <span className={styles.headerTitle}>Visualização de Entretenimento</span>
           <button type="button" className={styles.closeBtn} onClick={onClose} title="Fechar (Esc)">
             ✕
           </button>
@@ -263,12 +262,6 @@ export default function EntertainmentViewModal({
           <div className={styles.coverCol}>
             {item.posterUrl ? (
               <div className={styles.posterWrapper}>
-                <img
-                  src={item.posterUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className={styles.posterBlurBg}
-                />
                 <img
                   src={item.posterUrl}
                   alt={item.title}
@@ -635,6 +628,19 @@ export default function EntertainmentViewModal({
             <p className={styles.synopsisText}>{item.synopsis}</p>
           ) : (
             <p className={styles.synopsisEmpty}>Nenhuma sinopse cadastrada para este item.</p>
+          )}
+        </div>
+
+        {/* Atribuição Legal de ToS (TOS-01) */}
+        <div className={styles.tosRow}>
+          {item.category === 'movie' || item.category === 'series' ? (
+            <span>Dados de filmes e séries fornecidos por <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a> (este produto utiliza a API do TMDB mas não é endossado ou certificado pelo TMDB).</span>
+          ) : item.category === 'game' ? (
+            <span>Dados de jogos eletrônicos fornecidos por <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG.io</a>.</span>
+          ) : item.category === 'anime' || item.category === 'manga' ? (
+            <span>Dados de animes e mangás fornecidos por <a href="https://anilist.co" target="_blank" rel="noopener noreferrer">AniList</a>.</span>
+          ) : (
+            <span>Dados bibliográficos fornecidos por Google Books e Open Library.</span>
           )}
         </div>
 

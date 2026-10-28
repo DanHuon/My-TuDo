@@ -1,121 +1,68 @@
-# 📢 Changelog Oficial: MyTuDo
+# Changelog Oficial: MyTuDo
 
 > Este arquivo é mantido em sincronia com [Controle/CHANGELOG.md](file:///d:/Programacao/MyTuDo/Controle/CHANGELOG.md).
 
-Este documento registra todas as atualizações e notas de versão (*release notes*) do **MyTuDo**, com foco na experiência do usuário final.
+Este documento registra as notas de versão (release notes) do MyTuDo com foco em experiência do usuário e qualidade de engenharia.
+
+---
+
+## [v9.2.4] - 2026-10-28
+### Refinamentos Visuais, Hotfixes da Auditoria e Higienização do Repositório
+- **Alternador de Visualização Estilo Windows Explorer:** Novo seletor no topo da Estante permitindo alternar instantaneamente entre três modos de exibição: Cards Grandes (padrão imersivo), Ícones Compactos (grade mais densa) e Lista Detalhada (linhas compactas com miniatura, status, progresso e botão +1), com persistência automática no armazenamento local.
+- **Formulário de Entretenimento Reorganizado:** Seletor de Categoria movido para ficar posicionado imediatamente acima do botão "Buscar Metadados da Web", proporcionando um fluxo intuitivo de cadastro.
+- **Modal de Detalhes Limpo:** Remoção do título redundante do cabeçalho e remoção do efeito Dual Layer Blur dentro do modal de visualização, exibindo a capa crua com proporções preservadas em contêiner de dimensões fixas sem distorções visuais.
+- **Rodapé Global Realocado:** Rodapé inferior da tela principal removido para maximizar a área útil vertical (especialmente no Calendário), com informações transferidas de forma compacta e discreta para a base da Sidebar.
+- **Lazy Fetching no RAWG (SEC-02):** Otimização profunda na busca de jogos: a consulta inicial realiza apenas 1 requisição para listar os 5 candidatos no modal, e a requisição de detalhes é realizada sob demanda apenas para o jogo selecionado, reduzindo o consumo de cota de 6 para 2 requisições por busca (economia de 66,7%).
+- **Correção no Google Books (SEC-01):** Remoção de parâmetro de chave de API em chamadas do Google Books para evitar bloqueio por restrição de serviço da chave exclusiva do Google Picker.
+- **Atribuições Legais de Termos de Serviço (TOS-01):** Rodapé de conformidade legal adicionado no modal de busca e na visualização de detalhes, creditando TMDB, RAWG.io (com link ativo) e AniList.
+- **Higienização do Repositório:** Documentos soltos movidos para a pasta de requisitos, exclusão de arquivos órfãos de depuração, exclusão de pastas internas no `.gitignore` e desindexação do repositório Git.
 
 ---
 
 ## [v9.2.3-gov] - 2026-10-28
-### 🏛️ Marco de Auditoria Arquitetural (7 Pilares) & Governança de IA (Padrão Akita)
-- **Relatório Oficial de Auditoria (`AUDITORIA_E_EVOLUCAO_V9.md`):** Varredura completa de Segurança (AppSec), conformidade LGPD/ToS de APIs, arquitetura híbrida para o futuro aplicativo Android (`.apk`) / Desktop (`.exe`), análise de concorrência do motor de sincronização e design da futura *Command Bar Inteligente (`Ctrl + K`)* acoplada à Bolinha Flutuante.
-- **Governança de Memória no Padrão Akita (`Controle/`):** Separação estruturada entre regras ativas (`MEMORIA_IA.md`), histórico de decisões arquiteturais (`DECISOES_ARQUITETURAIS.md` com ADRs 001 a 012) e estado imediato de sessão (`ESTADO_ATUAL.md`).
-- **Esquadrão de 6 Agent Skills (`.agents/skills/`):** Implantação de 6 protocolos especializados (`grill-me-mytudo`, `plan-architect`, `local-first-guard`, `qa-stress-tester`, `security-apk-audit` e `phase-closeout`) para padronizar a qualidade de engenharia.
-- **Cofre de Evoluções Futuras (`Requisitos/BACKLOG_FUTURO_IDEIAS.md`):** Documentação estruturada das ideias de sinergia entre módulos e visão computacional para fases futuras.
+### Marco de Auditoria Arquitetural (7 Pilares) e Governança ai-memory
+- **Relatório Oficial de Auditoria:** Varredura completa cobrindo Segurança de Aplicação (AppSec), LGPD e Termos de Serviço de APIs, prontidão para o futuro empacotamento nativo da Fase 12 (Capacitor para Android e Tauri v2 para Desktop), análise de concorrência do motor de sincronização e arquitetura da Command Bar Global.
+- **Governança de Memória Akita:** Estruturação da pasta Controle/ separando regras ativas (`MEMORIA_IA.md`), histórico de decisões (`DECISOES_ARQUITETURAIS.md` com ADRs 001 a 012) e estado de sessão (`ESTADO_ATUAL.md`).
+- **Esquadrão de 6 Agent Skills:** Criação de rotinas especializadas em `.agents/skills/` (`grill-me-mytudo`, `plan-architect`, `local-first-guard`, `qa-stress-tester`, `security-apk-audit`, `phase-closeout`).
+- **Cofre de Ideias Futuras:** Criação de `Requisitos/BACKLOG_FUTURO_IDEIAS.md` para arquivamento de conceitos de sinergia entre módulos e visão computacional.
 
 ---
 
 ## [v9.2.3] - 2026-09-21
-### ✨ Polimento de Metadados, Capas e Responsividade
-- **Sinopses de Jogos Limpas:** Remoção de textos artificiais concatenados no resumo dos jogos do RAWG. A descrição agora é 100% autêntica, enquanto plataformas, notas e tempo de jogo são organizados exclusivamente nos widgets dedicados.
-- **Busca Resiliente de Filmes e Séries (TMDB):** Obras buscadas por títulos em inglês agora encontram resultados mesmo se a pesquisa em português não retornar dados imediatos.
-- **Proteção contra Erros de Cota (Google Books):** Adicionado um tempo de espera inteligente (debounce de 850ms) ao digitar no campo de busca, prevenindo bloqueios por excesso de requisições (erro 429).
-- **Temporadas com Contagem Precisa de Episódios:** Em séries, a quantidade de episódios exibida agora respeita o teto da temporada que você está assistindo (ex: Temporada 3 com 13 episódios), e o botão `+1` trava no teto correto da temporada.
-- **Automação ao Concluir Obras:** Ao alterar o status de qualquer obra para "Concluído", os episódios ou páginas são automaticamente preenchidos com o valor máximo disponível.
-- **Confirmação Visual no Botão de Sincronização (🔄):** O botão de sincronizar tetos agora sempre emite um aviso claro: se houver novidades, informa o novo total; se não houver, confirma que a obra já está em dia.
-- **Capas com Efeito Dual Layer Blur:** Fim das capas cortadas em livros ou jogos horizontais. O aplicativo agora utiliza uma camada de fundo desfocada combinada com a imagem principal inteira e sem distorções em primeiro plano.
+### Polimento de Metadados, Capas e Responsividade
+- **Sinopses de Jogos Limpas:** Remoção de concatenações de texto na descrição do RAWG.
+- **Busca Resiliente no TMDB:** Fallback automático para títulos em inglês quando a consulta em português não retorna dados imediatos.
+- **Proteção contra Erros de Cota no Google Books:** Debounce de 850ms para prevenir bloqueios de requisições em rajada.
+- **Temporadas com Contagem Precisa:** Denominador contextual de episódios baseado no teto da temporada selecionada.
+- **Automação ao Concluir Obras:** Preenchimento automático de progresso ao definir status como "Concluído".
+- **Confirmação no Botão de Sincronização:** Micro-toast com status claro de atualização dos tetos.
+- **Efeito Dual Layer Blur nos Cards:** Camada de fundo desfocada combinada com imagem frontal sem cortes nos cartões da estante.
 
 ---
 
 ## [v9.2.2] - 2026-09-21
-### 🎨 Integração Visual de Metadados (AniList & DNA de Mídia)
-- **Migração Definitiva para o AniList (GraphQL):** Fim dos erros de timeout em animes e mangás. As consultas agora utilizam a API oficial do AniList, trazendo dados riquíssimos em tempo real (capítulos, volumes, estúdios, média de notas e status de lançamento traduzido).
-- **Sub-Seções Visuais de DNA no View Mode:**
-  - **Jogos:** Selo com pontuação do Metacritic colorido dinamicamente (Verde para aclamação, Amarelo para misto, Vermelho para abaixo da média), estimativa de horas de jogo (`playtime`), classificação indicativa e lista de plataformas disponíveis.
-  - **Filmes:** Frase de efeito (Tagline) estilizada abaixo do título, duração formatada em horas e minutos (`Xh Ym`), diretor(es) e nota da crítica TMDB.
-  - **Séries:** Criador(es), emissora original (ex: HBO, Netflix, AMC), status oficial da produção e nota TMDB.
-  - **Animes e Mangás:** Estúdio responsável, formato da obra (TV, Filme, Mangá), status oficial e contagem de volumes e capítulos.
-  - **Livros:** Autores, editora, total de páginas e código ISBN.
-- **Sincronização de Tetos em 1 Clique (🔄):** Obras em andamento agora contam com o botão "Sincronizar Tetos" na tela de visualização. Ao clicar, o sistema consulta a API externa e atualiza automaticamente a quantidade de episódios ou capítulos lançados, emitindo um aviso em banner (micro-toast) sem fechar o modal.
+### Integração Visual de Metadados (AniList e DNA de Mídia)
+- **Migração para AniList GraphQL:** Consultas de animes e mangás migradas para a API oficial do AniList com retorno completo de metadados.
+- **Sub-seções de DNA Cultural:** Painéis específicos para jogos (Metacritic colorido, plataformas, tempo de jogo), filmes (diretores, duração, tagline), séries (criadores, status) e livros (editora, páginas, ISBN).
+- **Botão de Sincronização de Tetos:** Atualização rápida de obras em andamento com micro-toast.
 
 ---
 
 ## [v9.2.1] - 2026-09-21
-### 🛠️ Correções de Modelo de Dados & Limites Rígidos de Progresso
-- **Separação de Datas:** A data oficial de lançamento da obra agora é salva no campo dedicado `releaseYear`/`releaseDate`, preservando a data de início (`startDate`) estritamente para o momento em que você começou a consumir a obra.
-- **Tetos Máximos de Episódios/Páginas:** Implementação de `maxEpisodes` e `maxSeasons` no banco de dados. O botão de avanço rápido `+1` na tela de detalhes e no cartão agora trava automaticamente ao atingir o teto da obra.
-- **Preparação para Sincronização Dinâmica (Sync 🔄):** Estrutura desenhada para atualizar tetos de obras em lançamento com 1 clique.
+### Correções de Modelo de Dados e Limites Rígidos
+- **Separação de Datas:** Desacoplamento entre `releaseYear`/`releaseDate` e data de início de consumo do usuário (`startDate`).
+- **Tetos Máximos de Progresso:** Criação de `maxEpisodes` e `maxSeasons` no banco com travamento do botão +1 no teto correspondente.
 
 ---
 
 ## [v9.2.0] - 2026-09-21
-### 🔍 Busca Inteligente de Metadados da Web no Entretenimento
-- **Autocompletar com 1 Clique:** Novo botão "🔍 Buscar Metadados da Web" no formulário de cadastro e edição de itens de Entretenimento.
-- **Mini-Modal de Seleção Visual:** Apresenta os 5 melhores resultados com mini-pôsteres em alta resolução, título oficial, título original/autores, ano de lançamento, sinopse resumida e contagem de episódios/páginas/temporadas.
-- **Integração com Múltiplas Fontes Especializadas:**
-  - **Filmes e Séries:** Conexão nativa com a base de dados do TMDB com sinopses e títulos oficiais em português (pt-BR).
-  - **Jogos Eletrônicos:** Consulta direta à base de dados internacional do RAWG Video Games Database.
-  - **Animes e Mangás:** Consulta ao MyAnimeList (via Jikan v4) com fallback inteligente para séries do TMDB.
-  - **Livros:** Busca no Google Books com contingência automática e ilimitada na Open Library.
-- **Proteção contra Sobrecarga e Rate-Limits:** Sistema integrado de cache em memória (respostas instantâneas a buscas repetidas) e tratamento amigável de limites de API (HTTP 429).
-- **Pré-visualização Instantânea da Capa:** Visualização da imagem diretamente no formulário ao colar ou autocompletar uma URL.
-- **Refinamentos da Estante:** Indicador explícito de Temporada (`T: X | Ep: Y`) nos cartões de Séries e Animes e fechamento com a tecla `Escape`.
+### Busca de Metadados da Web no Entretenimento
+- **Modal de Seleção Visual:** Apresentação dos 5 melhores resultados com mini-pôsteres, sinopse e contagem de episódios/páginas.
+- **Integração com TMDB, RAWG, Jikan e Google Books.**
 
 ---
 
 ## [v9.1.0] - 2026-09-20
-### 🎬 Modo de Visualização Elegante (View Mode) no Entretenimento
-- **Novo View Mode no Duplo Clique:** Ao dar duplo clique em qualquer item da Estante (filmes, séries, animes, jogos, livros), abre-se um modal de visualização imersivo com pôster ampliado, sinopse completa e badges de status.
-- **Progresso Rápido no Próprio Modal:** Avance episódios ou capítulos com o botão `+1` diretamente na tela de detalhes sem precisar entrar em modo de edição.
-- **Transição Rápida para Edição:** Botão "✏️ Editar" no rodapé para alternar instantaneamente para o formulário completo.
-- **Exclusão Segura:** Botão de exclusão com confirmação rápida dentro da própria tela de visualização.
-
----
-
-## [v8.2.83] - 2026-09-20
-### 🌟 Interatividade Avançada de Mídia (Finalização da Fase 8)
-- **Arrastar e Soltar no Desktop (Drag & Drop):** Agora você pode arrastar qualquer scan ou documento da galeria diretamente para dentro do seu texto na anotação.
-- **Alinhamento e Contorno de Imagens (Text Wrap):** Ao clicar em uma foto no editor, uma barra flutuante permite alinhá-la à Esquerda, Centro ou Direita. O texto agora contorna suavemente as fotos de quadros e livros.
-- **Visualizador de PDF no Aplicativo:** PDFs anexados agora abrem diretamente no leitor interno (Lightbox) sem abrir abas adicionais no navegador.
-- **Formatação Visual dos Botões:** Os botões de **B** (Negrito), *I* (Itálico) e ~~S~~ (Tachado) da barra de ferramentas agora exibem visualmente o estilo que aplicam.
-
----
-
-## [v8.2.821] - 2026-09-19
-### 🛠️ Hotfix de Estabilidade e Tabelas
-- **Criação Visual de Tabelas:** Novo seletor em grade (estilo Word/Docs) que permite desenhar tabelas de até 10x10 apenas passando o mouse.
-- **Fidelidade ao Copiar e Colar:** Tabelas copiadas do MyTuDo agora colam no Google Docs e Microsoft Word com bordas e formatação intactas.
-- **Acesso Seguro a Pastas:** Aviso claro quando uma pasta vinculada do Google Drive não tiver permissão de acesso, evitando telas em branco.
-- **Foco Instantâneo da Barra de Ferramentas:** Correção da necessidade de dar Alt+Tab para ativar os botões de tabela.
-
----
-
-## [v8.2.82] - 2026-09-18
-### 💻 Workspace Lado a Lado & Modo Mobile Inteligente
-- **Fim dos Modais no Computador:** Ao editar ou criar anotações no desktop, o editor abre lado a lado com a galeria de scans da nuvem.
-- **Rolagem Independente:** O texto da anotação e a galeria de fotos rolam separadamente com altura travada na tela.
-- **Navegação por Abas no Celular:** Em smartphones, a tela divide-se em abas ergonômicas ("📝 Anotações" e "☁️ Scans") com transição automática ao selecionar anexos.
-
----
-
-## [v8.2.81] - 2026-09-17
-### 📂 Navegação de Subpastas & Menu Recolhível
-- **Explorador de Subpastas do Drive:** Navegação em pastas aninhadas com trilha de navegação (*Breadcrumbs*) e retorno instantâneo (0ms de espera).
-- **Menu Lateral Recolhível no Desktop:** Possibilidade de ocultar a barra lateral para ganhar mais foco e área de leitura/escrita.
-- **Botão de Atualização Rápida:** Botão de recarregamento para sincronizar uploads recentes do Drive sem sair da página.
-
----
-
-## [v8.2.7] - 2026-09-15
-### 🖼️ Pré-visualização em Alta Resolução & Anexos Híbridos
-- **Lightbox de Scans:** Clique para ampliar imagens em alta resolução e navegar em documentos PDF completos.
-- **Novo Modal de Inserção de Mídia:** Adicione anexos colando links do Google Drive com validação em tempo real ou usando o seletor visual do Drive.
-- **Dois Modos de Exibição:** Escolha entre incorporar imagens diretamente no texto ou exibi-las como cartões elegantes de anexo.
-
----
-
-## [v8.1.0] - 2026-09-10
-### 🎓 Fundação da Central de Conhecimento e Estudos
-- **Editor de Texto Rico (TipTap):** Suporte completo a títulos, listas com marcadores, listas ordenadas, tabelas e imagens.
-- **Hierarquia Acadêmica:** Organização em Matérias > Assuntos > Anotações de Estudo.
-- **Nuvem Pura (Zero Cota Local):** Integração com o Google Drive sem consumir espaço do seu dispositivo.
+### Modo de Visualização (View Mode) no Entretenimento
+- Abertura de modal de detalhes ao executar duplo clique em itens da Estante.
+- Controle rápido de progresso (+1) e transição para edição ou exclusão.

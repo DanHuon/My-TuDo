@@ -169,6 +169,11 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
           >
             ⚙️ Configurações
           </button>
+          
+          <div className={styles.sidebarFooter}>
+            <span>Tarefas · {new Date().getFullYear()}</span>
+            <span>Dexie (IndexedDB) · Local-First</span>
+          </div>
         </div>
       </aside>
     </>
