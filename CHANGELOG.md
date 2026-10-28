@@ -6,6 +6,15 @@ Este documento registra todas as atualizações e notas de versão (*release not
 
 ---
 
+## [v9.2.3-gov] - 2026-10-28
+### 🏛️ Marco de Auditoria Arquitetural (7 Pilares) & Governança de IA (Padrão Akita)
+- **Relatório Oficial de Auditoria (`AUDITORIA_E_EVOLUCAO_V9.md`):** Varredura completa de Segurança (AppSec), conformidade LGPD/ToS de APIs, arquitetura híbrida para o futuro aplicativo Android (`.apk`) / Desktop (`.exe`), análise de concorrência do motor de sincronização e design da futura *Command Bar Inteligente (`Ctrl + K`)* acoplada à Bolinha Flutuante.
+- **Governança de Memória no Padrão Akita (`Controle/`):** Separação estruturada entre regras ativas (`MEMORIA_IA.md`), histórico de decisões arquiteturais (`DECISOES_ARQUITETURAIS.md` com ADRs 001 a 012) e estado imediato de sessão (`ESTADO_ATUAL.md`).
+- **Esquadrão de 6 Agent Skills (`.agents/skills/`):** Implantação de 6 protocolos especializados (`grill-me-mytudo`, `plan-architect`, `local-first-guard`, `qa-stress-tester`, `security-apk-audit` e `phase-closeout`) para padronizar a qualidade de engenharia.
+- **Cofre de Evoluções Futuras (`Requisitos/BACKLOG_FUTURO_IDEIAS.md`):** Documentação estruturada das ideias de sinergia entre módulos e visão computacional para fases futuras.
+
+---
+
 ## [v9.2.3] - 2026-09-21
 ### ✨ Polimento de Metadados, Capas e Responsividade
 - **Sinopses de Jogos Limpas:** Remoção de textos artificiais concatenados no resumo dos jogos do RAWG. A descrição agora é 100% autêntica, enquanto plataformas, notas e tempo de jogo são organizados exclusivamente nos widgets dedicados.
