@@ -23,6 +23,7 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
   const [hovered, setHovered] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [loadingIA, setLoadingIA] = useState(false)
+  const [iaFeedback, setIaFeedback] = useState<string | null>(null)
   const [showTagMenu, setShowTagMenu] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
@@ -74,17 +75,20 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
   const handleAutoTag = async (e: React.MouseEvent) => {
     e.stopPropagation()
     setLoadingIA(true)
+    setIaFeedback(null)
     try {
       const success = await autoTagTask(task.id)
       if (success) {
+        setIaFeedback('Tags aplicadas')
         onRefresh()
       } else {
-        alert('A IA não encontrou nenhuma tag compatível com esta tarefa')
+        setIaFeedback('Sem tags afins')
       }
     } catch (error) {
-      alert('A IA não encontrou nenhuma tag compatível com esta tarefa')
+      setIaFeedback('Falha na IA')
     } finally {
       setLoadingIA(false)
+      setTimeout(() => setIaFeedback(null), 2500)
     }
   }
 
@@ -200,7 +204,7 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
             style={{
               background: 'none',
               border: '1px solid var(--border-dark)',
-              color: 'var(--ink-muted)',
+              color: iaFeedback ? 'var(--accent)' : 'var(--ink-muted)',
               padding: '0.35rem 0.7rem',
               borderRadius: '3px',
               cursor: loadingIA ? 'not-allowed' : 'pointer',
@@ -210,7 +214,7 @@ export default function TaskItem({ task, availableTags, onToggle, onEdit, onDele
               letterSpacing: '0.05em'
             }}
           >
-            {loadingIA ? 'Analisando...' : 'Tags IA'}
+            {loadingIA ? 'Analisando...' : iaFeedback || 'Tags IA'}
           </button>
           <div style={{ position: 'relative' }}>
             <button

@@ -38,6 +38,9 @@ function cleanHtmlDescription(str?: string | null): string | null {
 // In-memory cache across the application session
 const metadataCacheMap = new Map<string, MetadataItem[]>()
 
+// In-memory circuit breaker for Google Books (15 minutes cooling off upon HTTP 429/403)
+let googleBooksCircuitOpenUntil = 0
+
 export async function searchMetadata(
   query: string,
   category: 'movie' | 'series' | 'anime' | 'manga' | 'book' | 'game'
@@ -200,56 +203,64 @@ export async function searchMetadata(
         }
       }
     } else if (category === 'book') {
-      try {
-        // SEC-01 Fix: Never inject NEXT_PUBLIC_GOOGLE_API_KEY into Google Books (restricted to Picker API only)
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5`
-        const res = await fetch(url)
-        if (res.ok) {
-          const data = await res.json()
-          const rawList = Array.isArray(data.items) ? data.items.slice(0, 5) : []
+      const isCircuitOpen = Date.now() < googleBooksCircuitOpenUntil
 
-          items = rawList.map((item: any) => {
-            const vol = item.volumeInfo || {}
-            const authors = Array.isArray(vol.authors) ? vol.authors.join(', ') : null
-            const dateStr = vol.publishedDate || null
-            const year = dateStr ? dateStr.split('-')[0] : null
-            let posterUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || null
-            if (posterUrl && posterUrl.startsWith('http://')) {
-              posterUrl = posterUrl.replace('http://', 'https://')
-            }
+      if (!isCircuitOpen) {
+        try {
+          // SEC-01 Fix: Never inject NEXT_PUBLIC_GOOGLE_API_KEY into Google Books (restricted to Picker API only)
+          const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=5`
+          const res = await fetch(url)
 
-            const metadataExtras: Record<string, any> = {
-              authors: Array.isArray(vol.authors) ? vol.authors : (authors ? [authors] : []),
-              publisher: vol.publisher || null,
-              pageCount: vol.pageCount || null,
-              isbn: vol.industryIdentifiers?.[0]?.identifier || null,
-              genres: Array.isArray(vol.categories) ? vol.categories : [],
-            }
+          if (res.status === 429 || res.status === 403) {
+            // Open circuit breaker for 15 minutes to avoid flood of 429 errors in DevTools
+            googleBooksCircuitOpenUntil = Date.now() + 15 * 60 * 1000
+          } else if (res.ok) {
+            const data = await res.json()
+            const rawList = Array.isArray(data.items) ? data.items.slice(0, 5) : []
 
-            return {
-              id: `gbooks-${item.id}`,
-              title: vol.title || 'Sem título',
-              originalTitle: authors ? `Autor(es): ${authors}` : null,
-              year,
-              releaseYear: year,
-              releaseDate: dateStr,
-              startDate: null,
-              synopsis: cleanHtmlDescription(vol.description),
-              posterUrl,
-              category: 'book',
-              totalEpisodes: vol.pageCount || null,
-              totalSeasons: null,
-              maxEpisodes: vol.pageCount || null,
-              maxSeasons: null,
-              metadataExtras,
-            }
-          })
+            items = rawList.map((item: any) => {
+              const vol = item.volumeInfo || {}
+              const authors = Array.isArray(vol.authors) ? vol.authors.join(', ') : null
+              const dateStr = vol.publishedDate || null
+              const year = dateStr ? dateStr.split('-')[0] : null
+              let posterUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || null
+              if (posterUrl && posterUrl.startsWith('http://')) {
+                posterUrl = posterUrl.replace('http://', 'https://')
+              }
+
+              const metadataExtras: Record<string, any> = {
+                authors: Array.isArray(vol.authors) ? vol.authors : (authors ? [authors] : []),
+                publisher: vol.publisher || null,
+                pageCount: vol.pageCount || null,
+                isbn: vol.industryIdentifiers?.[0]?.identifier || null,
+                genres: Array.isArray(vol.categories) ? vol.categories : [],
+              }
+
+              return {
+                id: `gbooks-${item.id}`,
+                title: vol.title || 'Sem título',
+                originalTitle: authors ? `Autor(es): ${authors}` : null,
+                year,
+                releaseYear: year,
+                releaseDate: dateStr,
+                startDate: null,
+                synopsis: cleanHtmlDescription(vol.description),
+                posterUrl,
+                category: 'book',
+                totalEpisodes: vol.pageCount || null,
+                totalSeasons: null,
+                maxEpisodes: vol.pageCount || null,
+                maxSeasons: null,
+                metadataExtras,
+              }
+            })
+          }
+        } catch {
+          // Fall back to Open Library
         }
-      } catch {
-        // Fall back to Open Library
       }
 
-      // If Google Books returned 429 or 0 items, fallback to Open Library (free, no quota limit)
+      // If Google Books returned 429, circuit is open, or 0 items, fallback to Open Library (free, no quota limit)
       if (items.length === 0) {
         try {
           const olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=5`

@@ -4,20 +4,24 @@ import { autoTagTask } from '@/app/lib/db';
 
 export function AutoTagButton({ taskId, onTagsUpdated }: any) {
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleAutoTag = async () => {
     setLoading(true);
+    setFeedback(null);
     try {
       const success = await autoTagTask(taskId);
       if (success) {
+        setFeedback('Tags aplicadas');
         if (onTagsUpdated) onTagsUpdated();
       } else {
-        alert('Nenhuma tag compatível encontrada.');
+        setFeedback('Sem tags afins');
       }
     } catch (error) {
-      alert('Erro na IA.');
+      setFeedback('Falha na IA');
     } finally {
       setLoading(false);
+      setTimeout(() => setFeedback(null), 2500);
     }
   };
 
@@ -28,7 +32,7 @@ export function AutoTagButton({ taskId, onTagsUpdated }: any) {
       style={{
         background: 'none',
         border: '1px solid var(--border-dark)',
-        color: 'var(--ink-muted)',
+        color: feedback ? 'var(--accent)' : 'var(--ink-muted)',
         padding: '0.35rem 0.7rem',
         borderRadius: '3px',
         cursor: loading ? 'not-allowed' : 'pointer',
@@ -38,7 +42,7 @@ export function AutoTagButton({ taskId, onTagsUpdated }: any) {
         letterSpacing: '0.05em'
       }}
     >
-      {loading ? 'Analisando...' : 'Sugestão de Tags (IA)'}
+      {loading ? 'Analisando...' : feedback || 'Sugestão de Tags (IA)'}
     </button>
   );
 }

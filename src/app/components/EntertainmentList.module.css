@@ -54,6 +54,25 @@
   background: var(--accent);
 }
 
+.tabsScrollContainer {
+  position: relative;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .tabsScrollContainer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 28px;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--bg));
+    opacity: 0.9;
+  }
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -87,6 +106,38 @@
   background: var(--ink);
   color: var(--bg);
   border-color: var(--ink);
+}
+
+/* Toolbar Row & View Controls */
+.toolbarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.statusTabsWrapper {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.viewControlsGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.sortSelect {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  outline: none;
 }
 
 /* View Mode Switcher (Windows Explorer Style) */

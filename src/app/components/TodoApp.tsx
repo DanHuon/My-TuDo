@@ -9,7 +9,8 @@ import { useSync } from '@/app/lib/useSync'
 import { usePWAInstall } from '@/app/lib/usePWAInstall'
 import { 
   getTasks, getTags, addTask, editTask, deleteTask, 
-  toggleTask, addTag, editTag, deleteTag, toggleTaskTag 
+  toggleTask, addTag, editTag, deleteTag, toggleTaskTag,
+  autoTagTask
 } from '@/app/lib/db'
 import TaskForm from './TaskForm'
 import TaskList from './TaskList'
@@ -46,6 +47,7 @@ export default function TodoApp() {
   const [viewMode, setViewMode] = useState<ViewMode>('tasks')
   const [activeModule, setActiveModule] = useState<ActiveModule>('tasks')
   const [autoTagEnabled, setAutoTagEnabled] = useState(false)
+  const [isAutoTaggingActive, setIsAutoTaggingActive] = useState(false)
   const [toast, setToast] = useState<{ message: string; onUndo: () => void } | null>(null)
 
   useEffect(() => {
@@ -64,6 +66,25 @@ export default function TodoApp() {
   const handleAutoTagToggle = (checked: boolean) => {
     setAutoTagEnabled(checked)
     localStorage.setItem('auto-tag-new-tasks', String(checked))
+  }
+
+  const handleAddTask = async (
+    title: string,
+    description?: string,
+    dueDate?: string,
+    rrule?: string,
+    eventId?: string,
+    reminders?: { method: 'email' | 'popup'; minutes: number }[]
+  ) => {
+    const newTaskId = await addTask(title, description, dueDate, rrule, eventId, reminders)
+    if (autoTagEnabled && tags.length > 0 && newTaskId) {
+      setIsAutoTaggingActive(true)
+      autoTagTask(newTaskId)
+        .catch((err: any) => console.warn('Auto-tagging error:', err))
+        .finally(() => {
+          setTimeout(() => setIsAutoTaggingActive(false), 1200)
+        })
+    }
   }
 
   const handleLogout = async () => {
@@ -203,7 +224,7 @@ export default function TodoApp() {
               <div className={styles.sidebarSection}>
                 <h2 className={styles.sectionLabel}>Nova Tarefa / Evento</h2>
                 <TaskForm 
-                  onAdd={addTask} 
+                  onAdd={handleAddTask} 
                   onAddEvent={calendarSync.pushEventToGoogleCalendar}
                   calendars={calendarSync.calendars}
                 />
@@ -249,6 +270,11 @@ export default function TodoApp() {
                   />
                   <span className={styles.autoTagLabel}>Vincular tags automaticamente (IA)</span>
                 </label>
+                {isAutoTaggingActive && (
+                  <div style={{ marginTop: '0.45rem', fontSize: '0.7rem', color: 'var(--accent)', fontFamily: "'DM Mono', monospace" }}>
+                    ✦ Classificando tags com IA...
+                  </div>
+                )}
               </div>
             )}
 

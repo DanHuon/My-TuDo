@@ -155,8 +155,8 @@ export const getTasks = async (): Promise<Task[]> => {
   return items.map(itemToTask).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
-export const addTask = async (title: string, description?: string, dueDate?: string, rrule?: string, eventId?: string, reminders?: {method: 'email'|'popup', minutes: number}[]) => {
-  await addItem('task', 'active', {
+export const addTask = async (title: string, description?: string, dueDate?: string, rrule?: string, eventId?: string, reminders?: {method: 'email'|'popup', minutes: number}[]): Promise<string> => {
+  return await addItem('task', 'active', {
     title,
     description: description || null,
     dueDate: dueDate || null,
@@ -254,26 +254,57 @@ export const toggleTaskTag = async (taskId: string, tagId: string) => {
 };
 
 export const autoTagTask = async (taskId: string): Promise<boolean> => {
-  // Mock IA logic
-  await new Promise(resolve => setTimeout(resolve, 500));
+  const taskItem = await db.items.get(taskId);
+  if (!taskItem || taskItem.isDeleted) return false;
+
   const tags = await getTags();
   if (tags.length === 0) return false;
-  
-  const randomTag = tags[Math.floor(Math.random() * tags.length)];
-  const taskItem = await db.items.get(taskId);
-  if (!taskItem) return false;
 
-  const currentTags: Tag[] = taskItem.payload.tags || [];
-  if (currentTags.some(t => t.id === randomTag.id)) return true;
+  try {
+    const res = await fetch('/api/ai/auto-tag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: taskItem.payload.title || '',
+        description: taskItem.payload.description || '',
+        availableTags: tags.map(t => ({ id: t.id, name: t.name, description: t.description })),
+      }),
+    });
 
-  await db.items.update(taskId, {
-    updatedAt: new Date().toISOString(),
-    payload: {
-      ...taskItem.payload,
-      tags: [...currentTags, randomTag]
+    if (!res.ok) {
+      console.warn('Erro ao chamar /api/ai/auto-tag:', res.status);
+      return false;
     }
-  });
-  return true;
+
+    const data = await res.json();
+    const suggestedIds: string[] = data.tagIds || [];
+    if (suggestedIds.length === 0) return false;
+
+    const currentTags: Tag[] = taskItem.payload.tags || [];
+    const currentTagIds = new Set(currentTags.map(t => t.id));
+
+    // Filter tags that are not yet on the task
+    const tagsToAdd = tags.filter(t => suggestedIds.includes(t.id) && !currentTagIds.has(t.id));
+    if (tagsToAdd.length === 0) return true; // Já possuía as tags
+
+    const now = new Date().toISOString();
+    await db.items.update(taskId, {
+      updatedAt: now,
+      payload: {
+        ...taskItem.payload,
+        tags: [...currentTags, ...tagsToAdd],
+      },
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('dexie-local-change'));
+    }
+
+    return true;
+  } catch (err) {
+    console.error('autoTagTask exception:', err);
+    return false;
+  }
 };
 
 // --- Tag Specific CRUD ---

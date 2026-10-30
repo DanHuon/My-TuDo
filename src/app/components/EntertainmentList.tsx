@@ -76,20 +76,63 @@ export default function EntertainmentList() {
     }
   })
 
+  const getItemProgressState = (item: Entertainment) => {
+    const isSeriesOrAnime = ['series', 'anime'].includes(item.category)
+    const currentSeason = item.progress?.currentSeason || 1
+    const maxSeasons = item.maxSeasons ?? item.progress?.totalSeasons ?? null
+    const seasonMap = item.metadataExtras?.seasonEpisodes
+    const seasonCeiling = (item.category === 'series' && seasonMap)
+      ? (seasonMap[currentSeason] ?? seasonMap[String(currentSeason)] ?? null)
+      : null
+    const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
+    const curEp = item.progress?.currentEpisode || 0
+    const hasNextSeason = isSeriesOrAnime && maxSeasons !== null && currentSeason < maxSeasons
+    const isAtCurrentCeiling = epCeiling !== null && curEp >= epCeiling
+    const isTrulyMaxed = isAtCurrentCeiling && !hasNextSeason
+
+    return {
+      isSeriesOrAnime,
+      currentSeason,
+      maxSeasons,
+      seasonMap,
+      epCeiling,
+      curEp,
+      hasNextSeason,
+      isAtCurrentCeiling,
+      isTrulyMaxed,
+    }
+  }
+
   const handleIncrement = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation() // Crucial for not triggering the card double click
     const item = items.find(i => i.id === id)
     if (!item) return
-    const ceiling = item.maxEpisodes ?? item.progress.totalEpisodes ?? null
-    const current = item.progress.currentEpisode || 0
-    if (ceiling !== null && current >= ceiling) return
+    const state = getItemProgressState(item)
+    if (state.isTrulyMaxed) return
 
-    await editEntertainment(id, {
-      progress: {
-        ...item.progress,
-        currentEpisode: current + 1
-      }
-    })
+    if (state.isAtCurrentCeiling && state.hasNextSeason) {
+      const nextSeason = state.currentSeason + 1
+      const nextSeasonCeiling = state.seasonMap
+        ? (state.seasonMap[nextSeason] ?? state.seasonMap[String(nextSeason)] ?? null)
+        : null
+
+      await editEntertainment(id, {
+        maxEpisodes: nextSeasonCeiling ?? item.maxEpisodes,
+        progress: {
+          ...item.progress,
+          currentSeason: nextSeason,
+          currentEpisode: 1,
+          totalEpisodes: nextSeasonCeiling ?? item.progress?.totalEpisodes ?? null,
+        }
+      })
+    } else {
+      await editEntertainment(id, {
+        progress: {
+          ...item.progress,
+          currentEpisode: state.curEp + 1,
+        }
+      })
+    }
   }
 
   const handleCardDoubleClick = (item: Entertainment) => {
@@ -140,95 +183,94 @@ export default function EntertainmentList() {
         </button>
       </div>
 
-      <div className={styles.tabs} style={{ paddingBottom: '0' }}>
-        {(['all', 'series', 'movie', 'book', 'game', 'anime', 'manga'] as Tab[]).map(tab => (
-          <button
-            key={tab}
-            className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab === 'all' ? 'Tudo' : 
-             tab === 'series' ? '📺 Séries' :
-             tab === 'movie' ? '🎬 Filmes' :
-             tab === 'book' ? '📚 Livros' :
-             tab === 'game' ? '🎮 Jogos' : 
-             tab === 'anime' ? '🎌 Animes' : '📖 Mangás'}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div className={styles.tabs} style={{ flex: 1, paddingTop: '0' }}>
-          {(['all', 'plan', 'in_progress', 'completed', 'dropped'] as StatusTab[]).map(tab => (
+      <div className={styles.tabsScrollContainer}>
+        <div className={styles.tabs} style={{ paddingBottom: '0' }}>
+          {(['all', 'series', 'movie', 'book', 'game', 'anime', 'manga'] as Tab[]).map(tab => (
             <button
               key={tab}
-              className={`${styles.tab} ${statusTab === tab ? styles.tabActive : ''}`}
-              onClick={() => setStatusTab(tab)}
-              style={{ fontSize: '0.65rem', padding: '0.3rem 0.8rem' }}
+              className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab(tab)}
             >
-              {tab === 'all' ? 'Todos os Status' : getStatusLabel(tab)}
+              {tab === 'all' ? 'Tudo' : 
+               tab === 'series' ? '📺 Séries' :
+               tab === 'movie' ? '🎬 Filmes' :
+               tab === 'book' ? '📚 Livros' :
+               tab === 'game' ? '🎮 Jogos' : 
+               tab === 'anime' ? '🎌 Animes' : '📖 Mangás'}
             </button>
           ))}
         </div>
-        
-        {/* Alternador de Visualização Estilo Windows Explorer */}
-        <div className={styles.viewModeSwitcher} role="group" aria-label="Modo de visualização">
-          <button
-            type="button"
-            className={`${styles.viewModeBtn} ${viewMode === 'grid' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => handleViewModeChange('grid')}
-            title="Cards Grandes"
-            aria-label="Cards Grandes"
-          >
-            ⊞ Cards
-          </button>
-          <button
-            type="button"
-            className={`${styles.viewModeBtn} ${viewMode === 'compact' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => handleViewModeChange('compact')}
-            title="Ícones Médios / Compactos"
-            aria-label="Ícones Médios / Compactos"
-          >
-            㗊 Compacto
-          </button>
-          <button
-            type="button"
-            className={`${styles.viewModeBtn} ${viewMode === 'list' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => handleViewModeChange('list')}
-            title="Lista / Detalhes"
-            aria-label="Lista / Detalhes"
-          >
-            ☰ Lista
-          </button>
-        </div>
+      </div>
 
-        <select 
-          value={sortBy} 
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-          style={{
-            padding: '0.4rem',
-            borderRadius: '4px',
-            border: '1px solid var(--border)',
-            background: 'var(--bg-card)',
-            color: 'var(--ink)',
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '0.7rem',
-            outline: 'none'
-          }}
-        >
-          <option value="updatedDesc">Atualizado (Mais Recente)</option>
-          <option value="updatedAsc">Atualizado (Mais Antigo)</option>
-          <option value="createdDesc">Criado (Mais Recente)</option>
-          <option value="createdAsc">Criado (Mais Antigo)</option>
-          <option value="alphaAsc">Ordem Alfabética (A-Z)</option>
-          <option value="alphaDesc">Ordem Alfabética (Z-A)</option>
-          <option value="ratingDesc">Melhor Nota (10-1)</option>
-          <option value="ratingAsc">Pior Nota (1-10)</option>
-          <option value="startDesc">Data de Início (Mais Recente)</option>
-          <option value="startAsc">Data de Início (Mais Antigo)</option>
-          <option value="endDesc">Data de Fim (Mais Recente)</option>
-          <option value="endAsc">Data de Fim (Mais Antigo)</option>
-        </select>
+      <div className={styles.toolbarRow}>
+        <div className={styles.statusTabsWrapper}>
+          <div className={styles.tabsScrollContainer}>
+            <div className={styles.tabs} style={{ paddingTop: '0' }}>
+              {(['all', 'plan', 'in_progress', 'completed', 'dropped'] as StatusTab[]).map(tab => (
+                <button
+                  key={tab}
+                  className={`${styles.tab} ${statusTab === tab ? styles.tabActive : ''}`}
+                  onClick={() => setStatusTab(tab)}
+                  style={{ fontSize: '0.65rem', padding: '0.3rem 0.8rem' }}
+                >
+                  {tab === 'all' ? 'Todos os Status' : getStatusLabel(tab)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Alternador de Visualização Estilo Windows Explorer e Ordenação */}
+        <div className={styles.viewControlsGroup}>
+          <div className={styles.viewModeSwitcher} role="group" aria-label="Modo de visualização">
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${viewMode === 'grid' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => handleViewModeChange('grid')}
+              title="Cards Grandes"
+              aria-label="Cards Grandes"
+            >
+              ⊞ Cards
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${viewMode === 'compact' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => handleViewModeChange('compact')}
+              title="Ícones Médios / Compactos"
+              aria-label="Ícones Médios / Compactos"
+            >
+              㗊 Compacto
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${viewMode === 'list' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => handleViewModeChange('list')}
+              title="Lista / Detalhes"
+              aria-label="Lista / Detalhes"
+            >
+              ☰ Lista
+            </button>
+          </div>
+
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className={styles.sortSelect}
+          >
+            <option value="updatedDesc">Atualizado (Mais Recente)</option>
+            <option value="updatedAsc">Atualizado (Mais Antigo)</option>
+            <option value="createdDesc">Criado (Mais Recente)</option>
+            <option value="createdAsc">Criado (Mais Antigo)</option>
+            <option value="alphaAsc">Ordem Alfabética (A-Z)</option>
+            <option value="alphaDesc">Ordem Alfabética (Z-A)</option>
+            <option value="ratingDesc">Melhor Nota (10-1)</option>
+            <option value="ratingAsc">Pior Nota (1-10)</option>
+            <option value="startDesc">Data de Início (Mais Recente)</option>
+            <option value="startAsc">Data de Início (Mais Antigo)</option>
+            <option value="endDesc">Data de Fim (Mais Recente)</option>
+            <option value="endAsc">Data de Fim (Mais Antigo)</option>
+          </select>
+        </div>
       </div>
 
       {viewingItem && (
@@ -328,41 +370,33 @@ export default function EntertainmentList() {
                 <div className={styles.footer}>
                   <span className={styles.progress}>
                     {hasQuickAction(item.category) && (() => {
-                      const seasonNum = item.progress?.currentSeason || 1
-                      const seasonMap = item.metadataExtras?.seasonEpisodes
-                      const seasonCeiling = (item.category === 'series' && seasonMap)
-                        ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
-                        : null
-                      const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
-                      const curEp = item.progress?.currentEpisode || 0
-
+                      const state = getItemProgressState(item)
                       return (
                         <>
-                          {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                          {state.isSeriesOrAnime && item.progress.currentSeason ? (
                             <>T: {item.progress.currentSeason} | </>
                           ) : null}
-                          {getProgressLabel(item.category)}: {curEp}
-                          {epCeiling ? ` / ${epCeiling}` : ''}
+                          {getProgressLabel(item.category)}: {state.curEp}
+                          {state.epCeiling ? ` / ${state.epCeiling}` : ''}
                         </>
                       )
                     })()}
                   </span>
                   {hasQuickAction(item.category) && (() => {
-                    const seasonNum = item.progress?.currentSeason || 1
-                    const seasonMap = item.metadataExtras?.seasonEpisodes
-                    const seasonCeiling = (item.category === 'series' && seasonMap)
-                      ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
-                      : null
-                    const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
-                    const curEp = item.progress?.currentEpisode || 0
-                    const isMaxed = ceiling !== null && curEp >= ceiling
+                    const state = getItemProgressState(item)
+                    const titleText = state.isTrulyMaxed
+                      ? 'Teto máximo atingido'
+                      : state.isAtCurrentCeiling && state.hasNextSeason
+                      ? `Concluir temporada e avançar para Temporada ${state.currentSeason + 1}`
+                      : `Adicionar +1 ${getProgressLabel(item.category)}`
+
                     return (
                       <button 
                         className={styles.plusBtn} 
                         onClick={(e) => handleIncrement(item.id, e)}
-                        disabled={isMaxed}
-                        style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
-                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                        disabled={state.isTrulyMaxed}
+                        style={state.isTrulyMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                        title={titleText}
                       >
                         +1
                       </button>
@@ -429,37 +463,29 @@ export default function EntertainmentList() {
                 <div className={styles.footer} style={{ paddingTop: '0.35rem' }}>
                   <span className={styles.progress} style={{ fontSize: '0.7rem' }}>
                     {hasQuickAction(item.category) && (() => {
-                      const seasonNum = item.progress?.currentSeason || 1
-                      const seasonMap = item.metadataExtras?.seasonEpisodes
-                      const seasonCeiling = (item.category === 'series' && seasonMap)
-                        ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
-                        : null
-                      const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
-                      const curEp = item.progress?.currentEpisode || 0
-
+                      const state = getItemProgressState(item)
                       return (
                         <>
-                          {curEp}{epCeiling ? `/${epCeiling}` : ''}
+                          {state.curEp}{state.epCeiling ? `/${state.epCeiling}` : ''}
                         </>
                       )
                     })()}
                   </span>
                   {hasQuickAction(item.category) && (() => {
-                    const seasonNum = item.progress?.currentSeason || 1
-                    const seasonMap = item.metadataExtras?.seasonEpisodes
-                    const seasonCeiling = (item.category === 'series' && seasonMap)
-                      ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
-                      : null
-                    const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
-                    const curEp = item.progress?.currentEpisode || 0
-                    const isMaxed = ceiling !== null && curEp >= ceiling
+                    const state = getItemProgressState(item)
+                    const titleText = state.isTrulyMaxed
+                      ? 'Teto máximo atingido'
+                      : state.isAtCurrentCeiling && state.hasNextSeason
+                      ? `Concluir temporada e avançar para Temporada ${state.currentSeason + 1}`
+                      : `Adicionar +1 ${getProgressLabel(item.category)}`
+
                     return (
                       <button 
                         className={styles.plusBtn} 
                         onClick={(e) => handleIncrement(item.id, e)}
-                        disabled={isMaxed}
-                        style={{ width: '20px', height: '20px', fontSize: '0.7rem', ...(isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : {}) }}
-                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                        disabled={state.isTrulyMaxed}
+                        style={{ width: '20px', height: '20px', fontSize: '0.7rem', ...(state.isTrulyMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : {}) }}
+                        title={titleText}
                       >
                         +1
                       </button>
@@ -511,34 +537,27 @@ export default function EntertainmentList() {
 
               <div className={styles.listProgressSection}>
                 {hasQuickAction(item.category) && (() => {
-                  const seasonNum = item.progress?.currentSeason || 1
-                  const seasonMap = item.metadataExtras?.seasonEpisodes
-                  const seasonCeiling = (item.category === 'series' && seasonMap)
-                    ? (seasonMap[seasonNum] ?? seasonMap[String(seasonNum)] ?? null)
-                    : null
-                  const epCeiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
-                  const curEp = item.progress?.currentEpisode || 0
-                  const isMaxed = ceilingTarget(item, seasonCeiling)
-
-                  function ceilingTarget(it: Entertainment, sCeiling: number | null) {
-                    const c = sCeiling ?? it.maxEpisodes ?? it.progress?.totalEpisodes ?? null
-                    return c !== null && (it.progress?.currentEpisode || 0) >= c
-                  }
+                  const state = getItemProgressState(item)
+                  const titleText = state.isTrulyMaxed
+                    ? 'Teto máximo atingido'
+                    : state.isAtCurrentCeiling && state.hasNextSeason
+                    ? `Concluir temporada e avançar para Temporada ${state.currentSeason + 1}`
+                    : `Adicionar +1 ${getProgressLabel(item.category)}`
 
                   return (
                     <div className={styles.listProgressRow}>
                       <span className={styles.listProgressText}>
-                        {['series', 'anime'].includes(item.category) && item.progress.currentSeason ? (
+                        {state.isSeriesOrAnime && item.progress.currentSeason ? (
                           `T${item.progress.currentSeason} · `
                         ) : ''}
-                        {getProgressLabel(item.category)}: {curEp}{epCeiling ? ` / ${epCeiling}` : ''}
+                        {getProgressLabel(item.category)}: {state.curEp}{state.epCeiling ? ` / ${state.epCeiling}` : ''}
                       </span>
                       <button 
                         className={styles.plusBtn} 
                         onClick={(e) => handleIncrement(item.id, e)}
-                        disabled={isMaxed}
-                        style={isMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
-                        title={isMaxed ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressLabel(item.category)}`}
+                        disabled={state.isTrulyMaxed}
+                        style={state.isTrulyMaxed ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                        title={titleText}
                       >
                         +1
                       </button>

@@ -6,6 +6,28 @@ Este documento registra as notas de versão (release notes) do MyTuDo com foco e
 
 ---
 
+## [v9.3.0] - 2026-10-30
+### Motor de Auto-Tagging de Tarefas (Triunvirato de IA) e Polimento Definitivo de UI/UX
+- **Motor Serverless de Auto-Tagging (`/api/ai/auto-tag`):** Classificação automática e inteligente de tarefas contra as tags cadastradas pelo usuário, operando com o Triunvirato de IA ordenado por inteligência semântica:
+  1. Primário: `gemini-3.8-flash` (Google AI Studio) com validação estrita via JSON Schema.
+  2. Fallback 1: `deepseek-flash` (DeepSeek Platform) em modo `json_object`.
+  3. Fallback 2: `llama-3.3-70b-versatile` (Groq Cloud) em modo `json_object`.
+  - Calibragem semântica em `temperature: 0.25` em todos os modelos e validação determinística anti-alucinação descartando tags inexistentes.
+- **Fluxo Assíncrono Desacoplado na UI:** Switch *"Vincular tags automaticamente (IA)"* integrado à criação de tarefas no `TodoApp.tsx`: ao salvar uma nova tarefa, o registro é persistido a 0ms no IndexedDB e o motor de IA classifica as tags em segundo plano com indicador visual sutil na interface.
+- **Feedback Elegante sem Alerts:** Botões de tag (`TaskItem.tsx` e `AutoTagButton.tsx`) atualizados com micro-feedbacks visuais nos botões (*"Analisando..."*, *"Tags aplicadas"*, *"Sem tags afins"*), substituindo diálogos modais intrusivos de `alert()`.
+- **Blindagem da Bolinha Flutuante (Viewport Clamping):** Implementação de restrição matemática contínua nas coordenadas do menu hambúrguer arrastável na carga inicial do `localStorage` e em listeners de `window.resize`, impedindo que o botão fique inacessível fora da tela ao alternar entre monitores grandes e viewport Mobile (`412x915`).
+- **Barra de Ferramentas e Views sem Sobreposição:** Reorganização da toolbar da estante (`EntertainmentList.tsx`) com `flex-wrap` harmonioso entre status e controles de visualização, com indicador visual de rolagem horizontal em telas touch.
+- **Roll-over Automático de Temporadas:** O botão `+1` em séries e animes agora permite avançar automaticamente para `Temporada N+1, Episódio 1` ao concluir os episódios de uma temporada intermediária, sincronizando dinamicamente o teto da nova temporada e travando estritamente no final da última temporada disponível.
+- **Proporção Livre para Capas Horizontais:** Remoção do contêiner vertical rígido (`200x280px`) no modal de visualização (`EntertainmentViewModal.module.css`), permitindo que artes horizontais (16:9 de jogos eletrônicos) e pôsteres verticais se ajustem naturalmente sem faixas vazias.
+- **Trava Reativa contra Tetos Excedidos:** Clamping reativo imediato (`Math.min`) nos inputs de Temporada Atual e Episódio Atual no formulário de entretenimento.
+- **Resiliência Avançada de Busca Cultural:**
+  - TMDB: Fallback morfológico para variações de singular e plural em português (ex: `"ovelha detetive"` localiza *"As Ovelhas Detetives"*).
+  - RAWG: Ampliação para 8 resultados (`page_size=8`) e resolução de termos compostos separados por espaço (ex: `"Cyber punk 2077"` localiza o jogo base *"Cyberpunk 2077"*).
+  - Google Books: Circuit Breaker em memória de 15 minutos ao detectar limites de requisição (HTTP 429/403), desviando silenciosamente para a Open Library sem emitir erros no console.
+- **README Bilíngue e Versão na Sidebar:** Criação de `README.md` em Inglês (Default) e `README.pt-BR.md` em Português com seletores de idioma no cabeçalho; exibição da versão estável `MyTuDo v9.3.0` no rodapé da `Sidebar.tsx`.
+
+---
+
 ## [v9.2.4] - 2026-10-28
 ### Refinamentos Visuais, Hotfixes da Auditoria e Higienização do Repositório
 - **Alternador de Visualização Estilo Windows Explorer:** Novo seletor no topo da Estante permitindo alternar instantaneamente entre três modos de exibição: Cards Grandes (padrão imersivo), Ícones Compactos (grade mais densa) e Lista Detalhada (linhas compactas com miniatura, status, progresso e botão +1), com persistência automática no armazenamento local.

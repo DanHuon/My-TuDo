@@ -86,8 +86,8 @@
 }
 
 .coverCol {
-  flex: 0 0 190px;
-  min-width: 190px;
+  flex: 0 0 auto;
+  max-width: 260px;
 }
 
 @media (max-width: 600px) {
@@ -98,15 +98,16 @@
   }
   .coverCol {
     flex: none;
-    width: 200px;
+    width: auto;
+    max-width: 100%;
   }
 }
 
 .posterWrapper {
-  width: 100%;
-  max-width: 200px;
-  height: 280px;
-  max-height: 280px;
+  width: fit-content;
+  height: fit-content;
+  max-width: 250px;
+  max-height: 320px;
   border-radius: 8px;
   background: transparent;
   display: flex;
@@ -118,8 +119,10 @@
 
 .posterImage,
 .posterImg {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 250px;
+  max-height: 320px;
   object-fit: contain;
   display: block;
   border-radius: 8px;

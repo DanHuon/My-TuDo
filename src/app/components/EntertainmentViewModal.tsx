@@ -132,16 +132,19 @@ export default function EntertainmentViewModal({
   const hasProgress = ['series', 'anime', 'manga', 'book'].includes(item.category)
   const categoryInfo = getCategoryInfo(item.category)
   const statusInfo = getStatusInfo(item.watchStatus)
+  const isSeriesOrAnime = ['series', 'anime'].includes(item.category)
   const currentEp = item.progress?.currentEpisode ?? 0
   const currentSeason = item.progress?.currentSeason || 1
+  const maxSeasons = item.maxSeasons ?? item.progress?.totalSeasons ?? null
   const seasonMap = item.metadataExtras?.seasonEpisodes
   const seasonCeiling = (item.category === 'series' && seasonMap)
     ? (seasonMap[currentSeason] ?? seasonMap[String(currentSeason)] ?? null)
     : null
   const ceiling = seasonCeiling ?? item.maxEpisodes ?? item.progress?.totalEpisodes ?? null
   const totalEp = ceiling
+  const hasNextSeason = isSeriesOrAnime && maxSeasons !== null && currentSeason < maxSeasons
   const isAtCeiling = ceiling !== null && currentEp >= ceiling
-  const maxSeasons = item.maxSeasons ?? item.progress?.totalSeasons ?? null
+  const isTrulyAtCeiling = isAtCeiling && !hasNextSeason
 
   const extras = item.metadataExtras || {}
 
@@ -155,10 +158,26 @@ export default function EntertainmentViewModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  const handleQuickIncrement = (e: React.MouseEvent) => {
+  const handleQuickIncrement = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isAtCeiling) return
-    if (onUpdateProgress) {
+    if (isTrulyAtCeiling) return
+
+    if (isAtCeiling && hasNextSeason) {
+      const nextSeason = currentSeason + 1
+      const nextCeiling = seasonMap
+        ? (seasonMap[nextSeason] ?? seasonMap[String(nextSeason)] ?? null)
+        : null
+
+      await editEntertainment(item.id, {
+        maxEpisodes: nextCeiling ?? item.maxEpisodes,
+        progress: {
+          ...item.progress,
+          currentSeason: nextSeason,
+          currentEpisode: 1,
+          totalEpisodes: nextCeiling ?? item.progress?.totalEpisodes ?? null,
+        }
+      })
+    } else if (onUpdateProgress) {
       onUpdateProgress(item.id, currentEp + 1)
     }
   }
@@ -328,9 +347,14 @@ export default function EntertainmentViewModal({
                     <span>
                       {getProgressUnit(item.category)}: <strong>{currentEp}</strong>
                       {totalEp ? ` / ${totalEp}` : ''}
-                      {isAtCeiling && (
+                      {isTrulyAtCeiling && (
                         <span style={{ marginLeft: '0.4rem', color: '#10B981', fontSize: '0.75rem', fontWeight: 600 }}>
-                          (Teto atingido)
+                          (Obra concluída)
+                        </span>
+                      )}
+                      {isAtCeiling && hasNextSeason && (
+                        <span style={{ marginLeft: '0.4rem', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
+                          (Temporada concluída - clique +1 para próxima)
                         </span>
                       )}
                     </span>
@@ -353,9 +377,15 @@ export default function EntertainmentViewModal({
                     type="button"
                     className={styles.quickPlusBtn}
                     onClick={handleQuickIncrement}
-                    disabled={isAtCeiling}
-                    style={isAtCeiling ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
-                    title={isAtCeiling ? 'Teto máximo atingido' : `Adicionar +1 ${getProgressUnit(item.category)}`}
+                    disabled={isTrulyAtCeiling}
+                    style={isTrulyAtCeiling ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                    title={
+                      isTrulyAtCeiling
+                        ? 'Teto máximo atingido'
+                        : isAtCeiling && hasNextSeason
+                        ? `Avançar para Temporada ${currentSeason + 1}`
+                        : `Adicionar +1 ${getProgressUnit(item.category)}`
+                    }
                   >
                     +1
                   </button>

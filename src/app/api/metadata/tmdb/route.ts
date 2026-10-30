@@ -65,6 +65,36 @@ export async function GET(request: Request) {
       }
     }
 
+    // Morphological PT-BR Fallback (singular <-> plural variation, e.g. "ovelha detetive" <-> "ovelhas detetives")
+    if (rawItems.length === 0) {
+      try {
+        const words = query.trim().split(/\s+/)
+        const morphedWords = words.map(w => {
+          const lower = w.toLowerCase()
+          if (lower.length > 2 && lower.endsWith('s')) {
+            return lower.replace(/s$/, '')
+          } else if (lower.length > 2 && (lower.endsWith('a') || lower.endsWith('e') || lower.endsWith('o') || lower.endsWith('r') || lower.endsWith('z'))) {
+            if (lower.endsWith('r') || lower.endsWith('z')) return lower + 'es'
+            return lower + 's'
+          }
+          return w
+        })
+        const morphedQuery = morphedWords.join(' ')
+        if (morphedQuery.toLowerCase() !== query.trim().toLowerCase()) {
+          const morphUrl = `${endpoint}?api_key=${apiKey}&query=${encodeURIComponent(morphedQuery)}&language=pt-BR&page=1&include_adult=false`
+          const morphRes = await fetch(morphUrl, { headers: { Accept: 'application/json' } })
+          if (morphRes.ok) {
+            const morphData = await morphRes.json()
+            if (Array.isArray(morphData.results) && morphData.results.length > 0) {
+              rawItems = morphData.results.slice(0, 5)
+            }
+          }
+        }
+      } catch {
+        // Continue with empty rawItems
+      }
+    }
+
     const formatted = await Promise.all(
       rawItems.map(async (item: any) => {
         const isTv = type === 'series' || type === 'tv'

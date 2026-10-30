@@ -280,9 +280,18 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     <input 
                       type="number"
                       min="1"
+                      max={maxSeasons ?? undefined}
                       className={styles.input} 
                       value={currentSeason || ''} 
-                      onChange={e => setCurrentSeason(parseInt(e.target.value) || 1)} 
+                      onChange={e => {
+                        const raw = parseInt(e.target.value) || 1
+                        const clamped = maxSeasons !== null && maxSeasons > 0 ? Math.min(Math.max(1, raw), maxSeasons) : Math.max(1, raw)
+                        setCurrentSeason(clamped)
+                        if (category === 'series' && metadataExtras?.seasonEpisodes) {
+                          const sEp = metadataExtras.seasonEpisodes[clamped] ?? metadataExtras.seasonEpisodes[String(clamped)]
+                          if (sEp) setMaxEpisodes(sEp)
+                        }
+                      }} 
                     />
                   </div>
                   <div className={styles.formGroup}>
@@ -292,7 +301,13 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                       min="1"
                       className={styles.input} 
                       value={maxSeasons ?? ''} 
-                      onChange={e => setMaxSeasons(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                      onChange={e => {
+                        const val = e.target.value === '' ? null : parseInt(e.target.value) || null
+                        setMaxSeasons(val)
+                        if (val !== null && val > 0 && currentSeason > val) {
+                          setCurrentSeason(val)
+                        }
+                      }} 
                       placeholder="Ex: 5"
                     />
                   </div>
@@ -304,9 +319,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     <input 
                       type="number"
                       min="0"
+                      max={maxEpisodes ?? undefined}
                       className={styles.input} 
                       value={currentProgress || ''} 
-                      onChange={e => setCurrentProgress(parseInt(e.target.value) || 0)} 
+                      onChange={e => {
+                        const raw = parseInt(e.target.value) || 0
+                        const clamped = maxEpisodes !== null && maxEpisodes > 0 ? Math.min(Math.max(0, raw), maxEpisodes) : Math.max(0, raw)
+                        setCurrentProgress(clamped)
+                      }} 
                     />
                   </div>
                   <div className={styles.formGroup}>
@@ -318,7 +338,13 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                       min="1"
                       className={styles.input} 
                       value={maxEpisodes ?? ''} 
-                      onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                      onChange={e => {
+                        const val = e.target.value === '' ? null : parseInt(e.target.value) || null
+                        setMaxEpisodes(val)
+                        if (val !== null && val >= 0 && currentProgress > val) {
+                          setCurrentProgress(val)
+                        }
+                      }} 
                       placeholder="Ex: 24"
                     />
                   </div>
@@ -333,9 +359,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                   <input 
                     type="number"
                     min="0"
+                    max={maxEpisodes ?? undefined}
                     className={styles.input} 
                     value={currentProgress || ''} 
-                    onChange={e => setCurrentProgress(parseInt(e.target.value) || 0)} 
+                    onChange={e => {
+                      const raw = parseInt(e.target.value) || 0
+                      const clamped = maxEpisodes !== null && maxEpisodes > 0 ? Math.min(Math.max(0, raw), maxEpisodes) : Math.max(0, raw)
+                      setCurrentProgress(clamped)
+                    }} 
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -345,7 +376,13 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     min="1"
                     className={styles.input} 
                     value={maxEpisodes ?? ''} 
-                    onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                    onChange={e => {
+                      const val = e.target.value === '' ? null : parseInt(e.target.value) || null
+                      setMaxEpisodes(val)
+                      if (val !== null && val >= 0 && currentProgress > val) {
+                        setCurrentProgress(val)
+                      }
+                    }} 
                     placeholder="Ex: 350"
                   />
                 </div>
@@ -359,9 +396,14 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                   <input 
                     type="number"
                     min="0"
+                    max={maxEpisodes ?? undefined}
                     className={styles.input} 
                     value={currentProgress || ''} 
-                    onChange={e => setCurrentProgress(parseInt(e.target.value) || 0)} 
+                    onChange={e => {
+                      const raw = parseInt(e.target.value) || 0
+                      const clamped = maxEpisodes !== null && maxEpisodes > 0 ? Math.min(Math.max(0, raw), maxEpisodes) : Math.max(0, raw)
+                      setCurrentProgress(clamped)
+                    }} 
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -371,7 +413,13 @@ export default function EntertainmentForm({ onClose, onAdded, itemToEdit }: Prop
                     min="1"
                     className={styles.input} 
                     value={maxEpisodes ?? ''} 
-                    onChange={e => setMaxEpisodes(e.target.value === '' ? null : parseInt(e.target.value) || null)} 
+                    onChange={e => {
+                      const val = e.target.value === '' ? null : parseInt(e.target.value) || null
+                      setMaxEpisodes(val)
+                      if (val !== null && val >= 0 && currentProgress > val) {
+                        setCurrentProgress(val)
+                      }
+                    }} 
                     placeholder="Ex: 100"
                   />
                 </div>

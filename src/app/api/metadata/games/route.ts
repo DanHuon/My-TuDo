@@ -56,12 +56,13 @@ export async function GET(request: Request) {
       })
     }
 
-    // 2. Search Query (Returns top 5 candidates with 1 single RAWG request)
+    // 2. Search Query (Returns top 8 candidates with Lazy Fetching)
     if (!query || !query.trim()) {
       return NextResponse.json({ results: [] })
     }
 
-    const url = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(query.trim())}&page_size=5`
+    const cleanQuery = query.trim()
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(cleanQuery)}&page_size=8`
 
     const res = await fetch(url, {
       headers: {
@@ -86,7 +87,43 @@ export async function GET(request: Request) {
     }
 
     const data = await res.json()
-    const rawItems = Array.isArray(data.results) ? data.results.slice(0, 5) : []
+    let rawItems = Array.isArray(data.results) ? data.results : []
+
+    // If query has spaces (e.g. "Cyber punk 2077" -> "Cyberpunk 2077")
+    // check if a compound-word variant surfaces better base game candidates
+    const words = cleanQuery.split(/\s+/)
+    if (words.length > 1) {
+      try {
+        const combinedFirstTwo = words.length >= 2 ? [words[0] + words[1], ...words.slice(2)].join(' ') : null
+        const candidateQueries = [combinedFirstTwo].filter(Boolean).filter(q => q && q.toLowerCase() !== cleanQuery.toLowerCase()) as string[]
+
+        for (const candidate of candidateQueries) {
+          const varUrl = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(candidate)}&page_size=8`
+          const varRes = await fetch(varUrl, { headers: { Accept: 'application/json' } })
+          if (varRes.ok) {
+            const varData = await varRes.json()
+            if (Array.isArray(varData.results) && varData.results.length > 0) {
+              const existingIds = new Set(rawItems.map((r: any) => r.id))
+              for (const item of varData.results) {
+                if (!existingIds.has(item.id)) {
+                  // If candidate has metacritic or background_image, prepend to surface base game
+                  if (item.metacritic || item.background_image) {
+                    rawItems.unshift(item)
+                  } else {
+                    rawItems.push(item)
+                  }
+                  existingIds.add(item.id)
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Fallback silently
+      }
+    }
+
+    rawItems = rawItems.slice(0, 8)
 
     // Map list items directly (Zero extra calls - Lazy Fetching)
     const formatted = rawItems.map((item: any) => {

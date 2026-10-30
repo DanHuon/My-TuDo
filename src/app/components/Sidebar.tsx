@@ -19,20 +19,46 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [initialPointerDown, setInitialPointerDown] = useState({ x: 0, y: 0 })
 
+  const clampToViewport = (x: number, y: number) => {
+    if (typeof window === 'undefined') return { x, y }
+    const maxX = Math.max(8, window.innerWidth - 60)
+    const maxY = Math.max(8, window.innerHeight - 60)
+    return {
+      x: Math.max(8, Math.min(x, maxX)),
+      y: Math.max(8, Math.min(y, maxY)),
+    }
+  }
+
   useEffect(() => {
+    const handleResize = () => {
+      setPosition(prev => {
+        const clamped = clampToViewport(prev.x, prev.y)
+        if (clamped.x !== prev.x || clamped.y !== prev.y) {
+          localStorage.setItem('mytudo-hamburger-pos', JSON.stringify(clamped))
+          return clamped
+        }
+        return prev
+      })
+    }
+
     const savedPos = localStorage.getItem('mytudo-hamburger-pos')
     if (savedPos) {
       try {
-        setPosition(JSON.parse(savedPos))
+        const parsed = JSON.parse(savedPos)
+        const clamped = clampToViewport(parsed.x, parsed.y)
+        setPosition(clamped)
       } catch(e){}
     } else {
-      setPosition({ x: 16, y: window.innerHeight - 80 })
+      setPosition(clampToViewport(16, window.innerHeight - 80))
     }
 
     const savedCollapsed = localStorage.getItem('mytudo-sidebar-collapsed')
     if (savedCollapsed) {
       setIsDesktopCollapsed(savedCollapsed === 'true')
     }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   const toggleSidebar = () => {
@@ -67,18 +93,16 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
 
     const newX = e.clientX - dragStart.x
     const newY = e.clientY - dragStart.y
-    // Constrain to window bounds roughly
-    const maxX = window.innerWidth - 60
-    const maxY = window.innerHeight - 60
-    setPosition({ 
-      x: Math.max(0, Math.min(newX, maxX)), 
-      y: Math.max(0, Math.min(newY, maxY)) 
-    })
+    setPosition(clampToViewport(newX, newY))
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
     e.currentTarget.releasePointerCapture(e.pointerId)
-    localStorage.setItem('mytudo-hamburger-pos', JSON.stringify(position))
+    setPosition(prev => {
+      const clamped = clampToViewport(prev.x, prev.y)
+      localStorage.setItem('mytudo-hamburger-pos', JSON.stringify(clamped))
+      return clamped
+    })
     // We don't reset isDragging here immediately because onClick fires AFTER pointerup
     // It will be reset on the next pointerdown
     setTimeout(() => setIsDragging(false), 50)
@@ -171,8 +195,8 @@ export default function Sidebar({ activeModule, onModuleChange, isSyncing }: Sid
           </button>
           
           <div className={styles.sidebarFooter}>
-            <span>Tarefas · {new Date().getFullYear()}</span>
-            <span>Dexie (IndexedDB) · Local-First</span>
+            <span>MyTuDo v9.3.0 · Local-First</span>
+            <span>Dexie (IndexedDB) · {new Date().getFullYear()}</span>
           </div>
         </div>
       </aside>
